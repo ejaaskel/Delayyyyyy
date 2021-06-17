@@ -204,7 +204,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 float inputSample = channelData[n];
                 float delaySample = delayLineData[drp];
 
-                float feedbackMultiplier = juce::jmin(1.0f, (feedbackAmount * (((float)m + 1.0f) / (float)bufferAmount)) * ((float)bufferAmount * 0.7f));
+                float decayMultiplier = juce::jmin(1.0f, (decayAmount * (((float)m + 1.0f) / (float)bufferAmount)) * ((float)bufferAmount * 0.7f));
 
                 double pingPongMultiplier = 1.0;
                 if (pingPongAmount != 0.0) {
@@ -221,9 +221,8 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                         }
                     }
                 }
-                //New sample to delay buffer (i.e. new input plus multipliers written to some distance in future)
-                //TODO: It'd make more sense to apply wetAmount when reading from buffer, not when writing
-                delayLineData[dwp] = (float)(inputSample * feedbackMultiplier * pingPongMultiplier * wetAmount);
+                //New sample to delay buffer (i.e. new input with multipliers written to some distance in future)
+                delayLineData[dwp] = (float)(inputSample * decayMultiplier * pingPongMultiplier * wetAmount);
 
                 drp = (drp + 1) % delayBufferLength;
                 dwp = (dwp + 1) % delayBufferLength;
@@ -292,15 +291,14 @@ void DelayyyyyyAudioProcessor::setEchoAmount(int echo) {
     setDelayParams();
 }
 
-void DelayyyyyyAudioProcessor::setFeedbackAmount(float feedback) {
-    //TODO: Perhaps it'd make more sense to do this processing in editor side
-    feedbackAmount = feedback / 100.0f;
+void DelayyyyyyAudioProcessor::setDecayAmount(float decay) {
+    decayAmount = decay;
 }
 
 void DelayyyyyyAudioProcessor::setPingPongDelay(double pingPong) {
-    pingPongAmount = pingPong / 100.0;
+    pingPongAmount = pingPong;
 }
 
 void DelayyyyyyAudioProcessor::setWet(float wet) {
-    wetAmount = wet / 100.0f;
+    wetAmount = wet;
 }

@@ -71,19 +71,18 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     bufferAmount.addListener(this);
     addAndMakeVisible(&bufferAmount);
 
-    /* Feedback knob init */
-    //TODO: This isn't really feedback control, it's closer to decay control, so it should be renamed
-    feedbackAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    feedbackAmount.setRange(0.0, 100.0, 0.1);
-    feedbackAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
-    feedbackAmount.setTextValueSuffix("%");
-    feedbackAmount.setValue(70.0);
+    /* Decay knob init */
+    decayAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    decayAmount.setRange(0.0, 100.0, 0.1);
+    decayAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    decayAmount.setTextValueSuffix("");
+    decayAmount.setValue(30.0);
 
-    feedbackLabel.setText("Feedback", juce::dontSendNotification);
-    feedbackLabel.attachToComponent(&feedbackAmount, false);
+    decayLabel.setText("Decay Rate", juce::dontSendNotification);
+    decayLabel.attachToComponent(&decayAmount, false);
 
-    feedbackAmount.addListener(this);
-    addAndMakeVisible(&feedbackAmount);
+    decayAmount.addListener(this);
+    addAndMakeVisible(&decayAmount);
 
     /* Ping Pong knob init */
     pingPongAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -137,7 +136,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
 
     bufferAmount.setBounds(130, 40, 60, getHeight() - 60);
 
-    feedbackAmount.setBounds(200, 40, 60, 60);
+    decayAmount.setBounds(200, 40, 60, 60);
     pingPongAmount.setBounds(260, 40, 60, 60);
 
     wetAmount.setBounds(320, getHeight() - 160, 60, 60);
@@ -157,14 +156,15 @@ void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
     else if (slider == &bufferAmount) {
         audioProcessor.setEchoAmount((int)bufferAmount.getValue());
     }
-    else if (slider == &feedbackAmount) {
-        audioProcessor.setFeedbackAmount((float)feedbackAmount.getValue());
+    else if (slider == &decayAmount) {
+        //Higher decay rate means lower multiplier to the signal when processing, so subtract the value of slider from 1
+        audioProcessor.setDecayAmount(1.0f - (float)decayAmount.getValue() / 100.0f);
     }
     else if (slider == &pingPongAmount) {
-        audioProcessor.setPingPongDelay(pingPongAmount.getValue());
+        audioProcessor.setPingPongDelay(pingPongAmount.getValue() / 100.0);
     }
     else if (slider == &wetAmount) {
-        audioProcessor.setWet((float)wetAmount.getValue());
+        audioProcessor.setWet((float)wetAmount.getValue() / 100.0f);
     }
 }
 
