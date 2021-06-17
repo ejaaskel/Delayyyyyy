@@ -55,7 +55,7 @@ public:
 
     void setDelayLength(float delay);
     void setEchoAmount(int echo);
-    void setFeedbackAmount(float feedback);
+    void setDecayAmount(float decay);
     void setPingPongDelay(double pingPong);
     void setWet(float wet);
 
@@ -75,7 +75,7 @@ private:
     int bufferAmount = 3;
     float delayLength = 1.0f;
 
-    float feedbackAmount = 0.7f;
+    float decayAmount = 0.3f;
     //Need double accuracy for a zero comparison in code
     double pingPongAmount = 0.0;
 

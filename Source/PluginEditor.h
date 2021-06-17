@@ -39,8 +39,8 @@ private:
     juce::Slider bufferAmount;
     juce::Label bufferLabel;
 
-    juce::Label  feedbackLabel;
-    juce::Slider feedbackAmount;
+    juce::Label  decayLabel;
+    juce::Slider decayAmount;
     juce::Label  pingPongLabel;
     juce::Slider pingPongAmount;
 
