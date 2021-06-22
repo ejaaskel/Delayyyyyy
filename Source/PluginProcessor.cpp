@@ -93,8 +93,6 @@ void DelayyyyyyAudioProcessor::changeProgramName (int index, const juce::String&
 //TODO: Slightly misleading name. This sets only the delay buffers, not all params
 void DelayyyyyyAudioProcessor::setDelayParams() {
     for (int i = bufferAmount - 1; i >= 0; i = i - 1) {
-        //TODO: Instead of creating new buffers every time, perhaps existing ones could be re-used
-        // That way earlier echos would still remain. Not sure if this that important though
         DelayBuffer newDelayBuffer;
 
         //TODO: This doesn't really have to be this big for all of the buffers
