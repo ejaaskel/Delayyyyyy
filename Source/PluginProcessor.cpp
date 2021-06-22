@@ -93,26 +93,21 @@ void DelayyyyyyAudioProcessor::changeProgramName (int index, const juce::String&
 //TODO: Slightly misleading name. This sets only the delay buffers, not all params
 void DelayyyyyyAudioProcessor::setDelayParams() {
     for (int i = bufferAmount - 1; i >= 0; i = i - 1) {
-        juce::AudioBuffer<float> newDelayBuffer;
-        //TODO: This doesn't really have to be this big for all of the buffers
-        // The earlier the buffer plays, the shorter this can be (saving some memory)
         //TODO: Instead of creating new buffers every time, perhaps existing ones could be re-used
         // That way earlier echos would still remain. Not sure if this that important though
-        newDelayBuffer.setSize(getTotalNumInputChannels(), delayBufferLength);
-        newDelayBuffer.clear();
+        DelayBuffer newDelayBuffer;
 
-        int newDelayReadPosition = 0;
+        //TODO: This doesn't really have to be this big for all of the buffers
+        // The earlier the buffer plays, the shorter this can be (saving some memory)
         int delayInSamples = (int)(delayLength * currentSampleRate) / juce::jmax(1, 2 * i);
-        int newDelayWritePosition = delayInSamples;
 
-        delayLines.insert(delayLines.begin(), newDelayBuffer);
-        delayReadPositions.insert(delayReadPositions.begin(), newDelayReadPosition);
-        delayWritePositions.insert(delayWritePositions.begin(), newDelayWritePosition);
+        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), delayBufferLength);
+        newDelayBuffer.setDelayWritePosition(delayInSamples);
+
+        delayBuffers.insert(delayBuffers.begin(), newDelayBuffer);
     }
 
-    delayLines.resize(bufferAmount);
-    delayReadPositions.resize(bufferAmount);
-    delayWritePositions.resize(bufferAmount);
+    delayBuffers.resize(bufferAmount);
 }
 
 //==============================================================================
@@ -194,12 +189,12 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto* newOutputBufferChannelData = newOutputBuffer.getWritePointer(channel);
 
             //When changing delayLine amount from GUI, delayLine accesses can occasionally be out-of-bounds if not careful
-            if (m >= delayLines.size()) {
+            if (m >= delayBuffers.size()) {
                 break;
             }
-            auto* delayLineData = delayLines[m].getWritePointer(channel);
-            drp = delayReadPositions[m];
-            dwp = delayWritePositions[m];
+            auto* delayLineData = delayBuffers[m].getDelayLineWritePointer(channel);
+            drp = delayBuffers[m].getDelayReadPosition();
+            dwp = delayBuffers[m].getDelayWritePosition();
             for (n = 0; n < buffer.getNumSamples(); n++) {
                 float inputSample = channelData[n];
                 float delaySample = delayLineData[drp];
@@ -235,14 +230,14 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     //Update the read & write positions for the next block
     for (m = 0; m < bufferAmount; m++) {
-        if (m >= delayLines.size()) {
+        if (m >= delayBuffers.size()) {
             break;
         }
-        drp = delayReadPositions[m];
-        dwp = delayWritePositions[m];
+        drp = delayBuffers[m].getDelayReadPosition();
+        dwp = delayBuffers[m].getDelayWritePosition();
 
-        delayReadPositions[m] = (drp + buffer.getNumSamples()) % delayBufferLength;
-        delayWritePositions[m] = (dwp + buffer.getNumSamples()) % delayBufferLength;
+        delayBuffers[m].setDelayReadPosition((drp + buffer.getNumSamples()) % delayBufferLength);
+        delayBuffers[m].setDelayWritePosition((dwp + buffer.getNumSamples()) % delayBufferLength);
     }
 
     buffer.copyFrom(0, 0, newOutputBuffer.getReadPointer(0), newOutputBuffer.getNumSamples());

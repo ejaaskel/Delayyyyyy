@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "DelayBuffer.h"
 
 //==============================================================================
 /**
@@ -61,12 +62,7 @@ public:
 
 private:
     //==============================================================================
-
-    //TODO: instead of having these in three separate vectors, they could be refactored into one class
-    // This way only one vector would be needed to avoid them getting mismatched
-    std::vector<juce::AudioBuffer<float>> delayLines;
-    std::vector<int> delayReadPositions;
-    std::vector<int> delayWritePositions;
+    std::vector<DelayBuffer> delayBuffers;
 
     double currentSampleRate = 44100;
 
