@@ -95,11 +95,11 @@ void DelayyyyyyAudioProcessor::setDelayParams() {
     for (int i = bufferAmount - 1; i >= 0; i = i - 1) {
         DelayBuffer newDelayBuffer;
 
-        //TODO: This doesn't really have to be this big for all of the buffers
+        //TODO: Delay buffer doesn't really have to be this big for all of the buffers
         // The earlier the buffer plays, the shorter this can be (saving some memory)
-        int delayInSamples = (int)(delayLength * currentSampleRate) / juce::jmax(1, 2 * i);
-
         newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), delayBufferLength);
+
+        int delayInSamples = (int)(delayLength * currentSampleRate) / juce::jmax(1, 2 * i);
         newDelayBuffer.setDelayWritePosition(delayInSamples);
 
         delayBuffers.insert(delayBuffers.begin(), newDelayBuffer);
@@ -114,9 +114,8 @@ void DelayyyyyyAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
-    //TODO: 10 seconds is a bit much, considering the fact the maximum unsynced delay time is 5 seconds
-    //TODO: instead of magic number 10, use some variable
-    delayBufferLength = (int)(10 * sampleRate);
+
+    delayBufferLength = (int)(BUFFER_MAX_LEN_SEC * sampleRate);
     currentSampleRate = sampleRate;
 
     setDelayParams();

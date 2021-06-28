@@ -11,6 +11,10 @@
 #include <JuceHeader.h>
 #include "DelayBuffer.h"
 
+//TODO: 10 seconds is a bit much, considering the fact the maximum unsynced delay time is 5 seconds (5 seconds defined in slider
+// should consider using a define for it as well)
+#define BUFFER_MAX_LEN_SEC 10
+
 //==============================================================================
 /**
 */
@@ -66,7 +70,7 @@ private:
 
     double currentSampleRate = 44100;
 
-    int delayBufferLength = (int)currentSampleRate * 10;
+    int delayBufferLength = (int)currentSampleRate * BUFFER_MAX_LEN_SEC;
     //TODO: Buffer amount and echo amount are used to describe this same thing, make it more consistent
     int bufferAmount = 3;
     float delayLength = 1.0f;
