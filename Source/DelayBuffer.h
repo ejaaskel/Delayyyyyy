@@ -10,6 +10,7 @@ public:
 
     void setDelayLineParameters(int numChannels, int numSamples);
     float *getDelayLineWritePointer(int channel);
+    int getDelayLineSize();
 
     void setDelayReadPosition(int delayReadPosition);
     int getDelayReadPosition();
@@ -19,6 +20,7 @@ public:
 
 private:
     juce::AudioBuffer<float> delayLine;
+    int delayLineSize;
     int delayReadPosition;
     int delayWritePosition;
 };
