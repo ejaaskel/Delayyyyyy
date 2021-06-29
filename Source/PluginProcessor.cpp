@@ -90,22 +90,21 @@ void DelayyyyyyAudioProcessor::changeProgramName (int index, const juce::String&
 {
 }
 
-//TODO: Slightly misleading name. This sets only the delay buffers, not all params
-void DelayyyyyyAudioProcessor::setDelayParams() {
+void DelayyyyyyAudioProcessor::setDelayBufferParams(int maxDelayBufferSize) {
+    std::vector<DelayBuffer> newDelayBuffers;
     for (int i = bufferAmount - 1; i >= 0; i = i - 1) {
         DelayBuffer newDelayBuffer;
 
-        //TODO: Delay buffer doesn't really have to be this big for all of the buffers
-        // The earlier the buffer plays, the shorter this can be (saving some memory)
-        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), delayBufferLength);
+        int divider = juce::jmax(1, 2 * i);
 
-        int delayInSamples = (int)(delayLength * currentSampleRate) / juce::jmax(1, 2 * i);
+        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), maxDelayBufferSize / divider);
+
+        int delayInSamples = (int)(delayLength * currentSampleRate) / divider;
         newDelayBuffer.setDelayWritePosition(delayInSamples);
 
-        delayBuffers.insert(delayBuffers.begin(), newDelayBuffer);
+        newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
     }
-
-    delayBuffers.resize(bufferAmount);
+    delayBuffers = newDelayBuffers;
 }
 
 //==============================================================================
@@ -113,12 +112,10 @@ void DelayyyyyyAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    
 
-    delayBufferLength = (int)(BUFFER_MAX_LEN_SEC * sampleRate);
     currentSampleRate = sampleRate;
 
-    setDelayParams();
+    setDelayBufferParams((int)(BUFFER_MAX_LEN_SEC * sampleRate));
 }
 
 void DelayyyyyyAudioProcessor::releaseResources()
@@ -172,7 +169,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    int n, m, drp, dwp = 0;
+    int n, m, drp, dwp, curDelayBufferSize = 0;
     
     //Create copy of input so that we don't modify input during processing
     juce::AudioBuffer<float> newOutputBuffer;
@@ -190,6 +187,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 break;
             }
             auto* delayLineData = delayBuffers[m].getDelayLineWritePointer(channel);
+            curDelayBufferSize = delayBuffers[m].getDelayLineSize();
             drp = delayBuffers[m].getDelayReadPosition();
             dwp = delayBuffers[m].getDelayWritePosition();
             for (n = 0; n < buffer.getNumSamples(); n++) {
@@ -216,8 +214,8 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 //New sample to delay buffer (i.e. new input with multipliers written to some distance in future)
                 delayLineData[dwp] = (float)(inputSample * decayMultiplier * pingPongMultiplier * wetAmount);
 
-                drp = (drp + 1) % delayBufferLength;
-                dwp = (dwp + 1) % delayBufferLength;
+                drp = (drp + 1) % curDelayBufferSize;
+                dwp = (dwp + 1) % curDelayBufferSize;
 
                 //Add previous delay signal to the new input buffer
                 newOutputBufferChannelData[n] += delaySample;
@@ -230,11 +228,12 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         if (m >= delayBuffers.size()) {
             break;
         }
+        curDelayBufferSize = delayBuffers[m].getDelayLineSize();
         drp = delayBuffers[m].getDelayReadPosition();
         dwp = delayBuffers[m].getDelayWritePosition();
 
-        delayBuffers[m].setDelayReadPosition((drp + buffer.getNumSamples()) % delayBufferLength);
-        delayBuffers[m].setDelayWritePosition((dwp + buffer.getNumSamples()) % delayBufferLength);
+        delayBuffers[m].setDelayReadPosition((drp + buffer.getNumSamples()) % curDelayBufferSize);
+        delayBuffers[m].setDelayWritePosition((dwp + buffer.getNumSamples()) % curDelayBufferSize);
     }
 
     buffer.copyFrom(0, 0, newOutputBuffer.getReadPointer(0), newOutputBuffer.getNumSamples());
@@ -275,12 +274,12 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 void DelayyyyyyAudioProcessor::setDelayLength(float delay) {
     delayLength = delay;
-    setDelayParams();
+    setDelayBufferParams((int)(BUFFER_MAX_LEN_SEC * currentSampleRate));
 }
 
 void DelayyyyyyAudioProcessor::setEchoAmount(int echo) {
     bufferAmount = echo;
-    setDelayParams();
+    setDelayBufferParams((int)(BUFFER_MAX_LEN_SEC * currentSampleRate));
 }
 
 void DelayyyyyyAudioProcessor::setDecayAmount(float decay) {
