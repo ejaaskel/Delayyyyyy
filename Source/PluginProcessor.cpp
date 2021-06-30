@@ -90,8 +90,9 @@ void DelayyyyyyAudioProcessor::changeProgramName (int index, const juce::String&
 {
 }
 
-void DelayyyyyyAudioProcessor::setDelayBufferParams(int maxDelayBufferSize) {
+void DelayyyyyyAudioProcessor::setDelayBufferParams() {
     std::vector<DelayBuffer> newDelayBuffers;
+    int maxDelayBufferSize = (int)(BUFFER_MAX_LEN_SEC * currentSampleRate);
     for (int i = bufferAmount - 1; i >= 0; i = i - 1) {
         DelayBuffer newDelayBuffer;
 
@@ -114,8 +115,7 @@ void DelayyyyyyAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // initialisation that you need..
 
     currentSampleRate = sampleRate;
-
-    setDelayBufferParams((int)(BUFFER_MAX_LEN_SEC * sampleRate));
+    setDelayBufferParams();
 }
 
 void DelayyyyyyAudioProcessor::releaseResources()
@@ -274,12 +274,12 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 void DelayyyyyyAudioProcessor::setDelayLength(float delay) {
     delayLength = delay;
-    setDelayBufferParams((int)(BUFFER_MAX_LEN_SEC * currentSampleRate));
+    setDelayBufferParams();
 }
 
 void DelayyyyyyAudioProcessor::setEchoAmount(int echo) {
     bufferAmount = echo;
-    setDelayBufferParams((int)(BUFFER_MAX_LEN_SEC * currentSampleRate));
+    setDelayBufferParams();
 }
 
 void DelayyyyyyAudioProcessor::setDecayAmount(float decay) {
