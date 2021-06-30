@@ -80,7 +80,7 @@ private:
 
     float wetAmount = 1.0f;
 
-    void setDelayBufferParams(int maxDelayBufferSize);
+    void setDelayBufferParams();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessor)
 };
