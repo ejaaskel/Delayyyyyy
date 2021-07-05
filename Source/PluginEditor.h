@@ -38,9 +38,9 @@ private:
     std::unique_ptr<SliderAttachment> delayAttachment;
     juce::Slider delayAmountSynced;
 
-    juce::Slider bufferAmount;
-    std::unique_ptr<SliderAttachment> bufferAttachment;
-    juce::Label bufferLabel;
+    juce::Slider echoAmount;
+    std::unique_ptr<SliderAttachment> echoAttachment;
+    juce::Label echoLabel;
 
     juce::Label  decayLabel;
     juce::Slider decayAmount;

@@ -70,7 +70,6 @@ private:
 
     double currentSampleRate = 44100;
 
-    //TODO: Buffer amount and echo amount are used to describe this same thing, make it more consistent
     float prevDelayValue = -1.0f;
     float prevEchoValue = -1.0f;
 

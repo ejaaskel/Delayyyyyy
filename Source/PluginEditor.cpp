@@ -61,18 +61,18 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     //delayAmountSynced.addListener(this);
     //addChildComponent(&delayAmountSynced);
 
-    /* Buffer amount slider init */
-    bufferAmount.setSliderStyle(juce::Slider::LinearVertical);
-    bufferAmount.setRange(0.0, 8.0, 1.0);
-    bufferAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    bufferAmount.setValue(3.0);
+    /* Echo amount slider init */
+    echoAmount.setSliderStyle(juce::Slider::LinearVertical);
+    echoAmount.setRange(0.0, 8.0, 1.0);
+    echoAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    echoAmount.setValue(3.0);
 
-    bufferLabel.setText("Echoes", juce::dontSendNotification);
-    bufferLabel.attachToComponent(&bufferAmount, false);
+    echoLabel.setText("Echoes", juce::dontSendNotification);
+    echoLabel.attachToComponent(&echoAmount, false);
 
-    bufferAmount.addListener(this);
-    addAndMakeVisible(&bufferAmount);
-    bufferAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "ECHOES", bufferAmount));
+    echoAmount.addListener(this);
+    addAndMakeVisible(&echoAmount);
+    echoAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "ECHOES", echoAmount));
 
     /* Decay knob init */
     decayAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -136,7 +136,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
     delayAmount.setBounds(40, 40, 60, getHeight() - 60);
     delayAmountSynced.setBounds(40, 40, 60, getHeight() - 60);
 
-    bufferAmount.setBounds(130, 40, 60, getHeight() - 60);
+    echoAmount.setBounds(130, 40, 60, getHeight() - 60);
 
     decayAmount.setBounds(200, 40, 60, 60);
     pingPongAmount.setBounds(260, 40, 60, 60);
@@ -148,7 +148,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
 
 void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
-    if (slider == &delayAmount || slider == &bufferAmount) {
+    if (slider == &delayAmount || slider == &echoAmount) {
         audioProcessor.setDelayBufferParams();
     }
 }
