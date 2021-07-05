@@ -19,9 +19,42 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
 #endif
+    parameters(*this, nullptr, juce::Identifier("VALUETREE"),
+        {
+            std::make_unique<juce::AudioParameterFloat>("MAXDELAY",        // parameterID
+                                                        "Max Delay",       // parameter name
+                                                        0.0f,              // minimum value
+                                                        5.0f,              // maximum value
+                                                        1.0f),             // default value
+            std::make_unique<juce::AudioParameterInt>("ECHOES",
+                                                      "Echoes",
+                                                      0,
+                                                      8,
+                                                      3),
+            std::make_unique<juce::AudioParameterFloat>("DECAY",
+                                                        "Decay Rate",
+                                                        0.0f,
+                                                        100.0f,
+                                                        30.0f),
+            std::make_unique<juce::AudioParameterFloat>("PINGPONG",
+                                                        "Ping Pong",
+                                                        0.0f,
+                                                        100.0f,
+                                                        0.0f),
+            std::make_unique<juce::AudioParameterFloat>("WET",
+                                                        "Wet",
+                                                        0.0f,
+                                                        100.0f,
+                                                        100.0f),
+        })
 {
+    delayParameter = parameters.getRawParameterValue("MAXDELAY");
+    echoParameter = parameters.getRawParameterValue("ECHOES");
+    decayParameter = parameters.getRawParameterValue("DECAY");
+    pingPongParameter = parameters.getRawParameterValue("PINGPONG");
+    wetParameter = parameters.getRawParameterValue("WET");
 }
 
 DelayyyyyyAudioProcessor::~DelayyyyyyAudioProcessor()
@@ -91,16 +124,24 @@ void DelayyyyyyAudioProcessor::changeProgramName (int index, const juce::String&
 }
 
 void DelayyyyyyAudioProcessor::setDelayBufferParams() {
+    if (*delayParameter == prevDelayValue && *echoParameter == prevEchoValue) {
+        return;
+    }
+    else {
+        prevDelayValue = *delayParameter;
+        prevEchoValue = *echoParameter;
+    }
+
     std::vector<DelayBuffer> newDelayBuffers;
     int maxDelayBufferSize = (int)(BUFFER_MAX_LEN_SEC * currentSampleRate);
-    for (int i = bufferAmount - 1; i >= 0; i = i - 1) {
+    for (int i = (int)*echoParameter - 1; i >= 0; i = i - 1) {
         DelayBuffer newDelayBuffer;
 
         int divider = juce::jmax(1, 2 * i);
 
         newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), maxDelayBufferSize / divider);
 
-        int delayInSamples = (int)(delayLength * currentSampleRate) / divider;
+        int delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
         newDelayBuffer.setDelayWritePosition(delayInSamples);
 
         newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
@@ -175,10 +216,15 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     juce::AudioBuffer<float> newOutputBuffer;
     newOutputBuffer.makeCopyOf(buffer);
 
+    //Higher decay rate means lower multiplier to the signal when processing, so subtract the value of slider from 1
+    float currentDecay = 1.0f - (*decayParameter / 100.0f);
+    float currentPingPong = *pingPongParameter / 100.0f;
+    float currentWet = *wetParameter / 100.0f;
+
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         //TODO: This could use some optimization & refactoring for sure
-        for (m = 0; m < bufferAmount; m++) {
+        for (m = 0; m < *echoParameter; m++) {
             auto* channelData = buffer.getReadPointer(channel);
             auto* newOutputBufferChannelData = newOutputBuffer.getWritePointer(channel);
 
@@ -194,25 +240,26 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 float inputSample = channelData[n];
                 float delaySample = delayLineData[drp];
 
-                float decayMultiplier = juce::jmin(1.0f, (decayAmount * (((float)m + 1.0f) / (float)bufferAmount)) * ((float)bufferAmount * 0.7f));
+                //TODO: Change this into something a bit more sensible...
+                float decayMultiplier = juce::jmin(1.0f, (currentDecay * (((float)m + 1.0f) / (float)*echoParameter)) * ((float)*echoParameter * 0.7f));
 
                 double pingPongMultiplier = 1.0;
-                if (pingPongAmount != 0.0) {
+                if (currentPingPong != 0.0) {
                     //If odd buffer, pan one side
                     if (m % 2 == 1) {
                         if (channel % 2 == 1) {
-                            pingPongMultiplier = 1 - pingPongAmount;
+                            pingPongMultiplier = 1 - currentPingPong;
                         }
                     }
                     //If even buffer, pan other side
                     else {
                         if (channel % 2 == 0) {
-                            pingPongMultiplier = 1 - pingPongAmount;
+                            pingPongMultiplier = 1 - currentPingPong;
                         }
                     }
                 }
                 //New sample to delay buffer (i.e. new input with multipliers written to some distance in future)
-                delayLineData[dwp] = (float)(inputSample * decayMultiplier * pingPongMultiplier * wetAmount);
+                delayLineData[dwp] = (float)(inputSample * decayMultiplier * pingPongMultiplier * currentWet);
 
                 drp = (drp + 1) % curDelayBufferSize;
                 dwp = (dwp + 1) % curDelayBufferSize;
@@ -224,7 +271,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     }
 
     //Update the read & write positions for the next block
-    for (m = 0; m < bufferAmount; m++) {
+    for (m = 0; m < *echoParameter; m++) {
         if (m >= delayBuffers.size()) {
             break;
         }
@@ -272,24 +319,6 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new DelayyyyyyAudioProcessor();
 }
 
-void DelayyyyyyAudioProcessor::setDelayLength(float delay) {
-    delayLength = delay;
-    setDelayBufferParams();
-}
-
-void DelayyyyyyAudioProcessor::setEchoAmount(int echo) {
-    bufferAmount = echo;
-    setDelayBufferParams();
-}
-
-void DelayyyyyyAudioProcessor::setDecayAmount(float decay) {
-    decayAmount = decay;
-}
-
-void DelayyyyyyAudioProcessor::setPingPongDelay(double pingPong) {
-    pingPongAmount = pingPong;
-}
-
-void DelayyyyyyAudioProcessor::setWet(float wet) {
-    wetAmount = wet;
+juce::AudioProcessorValueTreeState* DelayyyyyyAudioProcessor::getParameters() {
+    return &parameters;
 }

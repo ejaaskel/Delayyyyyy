@@ -9,7 +9,7 @@ What it does is that it takes an input signal and copies it to a varying amounts
 Still working on this to get it into a bit more presentable shape, but it already does what it promises. Following features are still on the to-do list:
 - VST support (it may work as a VST plugin, I haven't tried it)
 - BPM synced delay
-- Use value trees for the parameters
+- ~~Use value trees for the parameters~~ DONE
 - Custom UI (just because I want to try it out)
 - Refactoring & optimizations
 - Update JUCE version
