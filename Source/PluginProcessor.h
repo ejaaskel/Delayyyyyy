@@ -54,33 +54,30 @@ public:
     const juce::String getProgramName (int index) override;
     void changeProgramName (int index, const juce::String& newName) override;
 
+    void setDelayBufferParams();
+
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    void setDelayLength(float delay);
-    void setEchoAmount(int echo);
-    void setDecayAmount(float decay);
-    void setPingPongDelay(double pingPong);
-    void setWet(float wet);
+    juce::AudioProcessorValueTreeState* getParameters(void);
 
 private:
     //==============================================================================
+    juce::AudioProcessorValueTreeState parameters;
+
     std::vector<DelayBuffer> delayBuffers;
 
     double currentSampleRate = 44100;
 
-    //TODO: Buffer amount and echo amount are used to describe this same thing, make it more consistent
-    int bufferAmount = 3;
-    float delayLength = 1.0f;
+    float prevDelayValue = -1.0f;
+    float prevEchoValue = -1.0f;
 
-    float decayAmount = 0.3f;
-    //Need double accuracy for a zero comparison in code
-    double pingPongAmount = 0.0;
-
-    float wetAmount = 1.0f;
-
-    void setDelayBufferParams();
+    std::atomic<float>* delayParameter = nullptr;
+    std::atomic<float>* echoParameter = nullptr;
+    std::atomic<float>* decayParameter = nullptr;
+    std::atomic<float>* pingPongParameter = nullptr;
+    std::atomic<float>* wetParameter = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessor)
 };

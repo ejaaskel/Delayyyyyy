@@ -19,6 +19,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     /* Delay slider init */
     delayAmount.setSliderStyle(juce::Slider::LinearVertical);
+    //TODO: Investigate if this setRange is required anymore now that value trees are used
     delayAmount.setRange(0.0, 5.0, 0.001);
     delayAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     delayAmount.setTextValueSuffix(" s");
@@ -30,6 +31,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     delayAmount.addListener(this);
     addAndMakeVisible(&delayAmount);
+    delayAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "MAXDELAY", delayAmount));
 
     /* Synced delay slider init (NOT ENABLED YET) */
     delayAmountSynced.setSliderStyle(juce::Slider::LinearVertical);
@@ -56,20 +58,21 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     };
     delayAmountSynced.setValue(1.0);
 
-    delayAmountSynced.addListener(this);
+    //delayAmountSynced.addListener(this);
     //addChildComponent(&delayAmountSynced);
 
-    /* Buffer amount slider init */
-    bufferAmount.setSliderStyle(juce::Slider::LinearVertical);
-    bufferAmount.setRange(0.0, 8.0, 1.0);
-    bufferAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    bufferAmount.setValue(3.0);
+    /* Echo amount slider init */
+    echoAmount.setSliderStyle(juce::Slider::LinearVertical);
+    echoAmount.setRange(0.0, 8.0, 1.0);
+    echoAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    echoAmount.setValue(3.0);
 
-    bufferLabel.setText("Echoes", juce::dontSendNotification);
-    bufferLabel.attachToComponent(&bufferAmount, false);
+    echoLabel.setText("Echoes", juce::dontSendNotification);
+    echoLabel.attachToComponent(&echoAmount, false);
 
-    bufferAmount.addListener(this);
-    addAndMakeVisible(&bufferAmount);
+    echoAmount.addListener(this);
+    addAndMakeVisible(&echoAmount);
+    echoAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "ECHOES", echoAmount));
 
     /* Decay knob init */
     decayAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -81,8 +84,8 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     decayLabel.setText("Decay Rate", juce::dontSendNotification);
     decayLabel.attachToComponent(&decayAmount, false);
 
-    decayAmount.addListener(this);
     addAndMakeVisible(&decayAmount);
+    decayAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "DECAY", decayAmount));
 
     /* Ping Pong knob init */
     pingPongAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -94,8 +97,8 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     pingPongLabel.setText("Ping Pong", juce::dontSendNotification);
     pingPongLabel.attachToComponent(&pingPongAmount, false);
 
-    pingPongAmount.addListener(this);
     addAndMakeVisible(&pingPongAmount);
+    pingPongAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "PINGPONG", pingPongAmount));
 
     /* Wet knob init */
     wetAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -108,12 +111,11 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     wetLabel.attachToComponent(&wetAmount, false);
     wetLabel.setJustificationType(juce::Justification::centredTop);
 
-    wetAmount.addListener(this);
     addAndMakeVisible(&wetAmount);
+    wetAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "WET", wetAmount));
 
     /* BPM sync initialization (NOT ENABLED YET) */
     bpmSync.setButtonText("BPM Sync");
-    bpmSync.addListener(this);
     //addAndMakeVisible(&bpmSync);
 }
 
@@ -134,7 +136,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
     delayAmount.setBounds(40, 40, 60, getHeight() - 60);
     delayAmountSynced.setBounds(40, 40, 60, getHeight() - 60);
 
-    bufferAmount.setBounds(130, 40, 60, getHeight() - 60);
+    echoAmount.setBounds(130, 40, 60, getHeight() - 60);
 
     decayAmount.setBounds(200, 40, 60, 60);
     pingPongAmount.setBounds(260, 40, 60, 60);
@@ -146,30 +148,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
 
 void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
-    //TODO: Especially with delayLength option there's a lot of performance hit
-    // Perhaps don't call it with every slide of the slider
-
-    //TODO: This really really REALLY should be done with value trees
-    if (slider == &delayAmount) {
-        audioProcessor.setDelayLength((float)delayAmount.getValue());
+    if (slider == &delayAmount || slider == &echoAmount) {
+        audioProcessor.setDelayBufferParams();
     }
-    else if (slider == &bufferAmount) {
-        audioProcessor.setEchoAmount((int)bufferAmount.getValue());
-    }
-    else if (slider == &decayAmount) {
-        //Higher decay rate means lower multiplier to the signal when processing, so subtract the value of slider from 1
-        audioProcessor.setDecayAmount(1.0f - (float)decayAmount.getValue() / 100.0f);
-    }
-    else if (slider == &pingPongAmount) {
-        audioProcessor.setPingPongDelay(pingPongAmount.getValue() / 100.0);
-    }
-    else if (slider == &wetAmount) {
-        audioProcessor.setWet((float)wetAmount.getValue() / 100.0f);
-    }
-}
-
-void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
-{
-    delayAmount.setVisible(!delayAmount.isVisible());
-    delayAmountSynced.setVisible(!delayAmountSynced.isVisible());
 }
