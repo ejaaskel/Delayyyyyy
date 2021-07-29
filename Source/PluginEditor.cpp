@@ -19,12 +19,8 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     /* Delay slider init */
     delayAmount.setSliderStyle(juce::Slider::LinearVertical);
-    //TODO: Investigate if this setRange is required anymore now that value trees are used
-    delayAmount.setRange(0.0, 5.0, 0.001);
     delayAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     delayAmount.setTextValueSuffix(" s");
-    delayAmount.setSkewFactor(0.4);
-    delayAmount.setValue(1.0);
 
     delayLabel.setText("Max delay", juce::dontSendNotification);
     delayLabel.attachToComponent(&delayAmount, false);
@@ -34,7 +30,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     delayAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "MAXDELAY", delayAmount));
 
     /* Synced delay slider init (NOT ENABLED YET) */
-    delayAmountSynced.setSliderStyle(juce::Slider::LinearVertical);
+    /*delayAmountSynced.setSliderStyle(juce::Slider::LinearVertical);
     delayAmountSynced.setRange(0.0, 16, 1.0);
     delayAmountSynced.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     delayAmountSynced.textFromValueFunction = [](double val) {
@@ -56,16 +52,14 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
         }
         return "";
     };
-    delayAmountSynced.setValue(1.0);
+    delayAmountSynced.setValue(1.0);*/
 
     //delayAmountSynced.addListener(this);
     //addChildComponent(&delayAmountSynced);
 
     /* Echo amount slider init */
     echoAmount.setSliderStyle(juce::Slider::LinearVertical);
-    echoAmount.setRange(0.0, 8.0, 1.0);
     echoAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    echoAmount.setValue(3.0);
 
     echoLabel.setText("Echoes", juce::dontSendNotification);
     echoLabel.attachToComponent(&echoAmount, false);
@@ -76,10 +70,8 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     /* Decay knob init */
     decayAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    decayAmount.setRange(0.0, 100.0, 0.1);
     decayAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     decayAmount.setTextValueSuffix("");
-    decayAmount.setValue(30.0);
 
     decayLabel.setText("Decay Rate", juce::dontSendNotification);
     decayLabel.attachToComponent(&decayAmount, false);
@@ -89,10 +81,8 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     /* Ping Pong knob init */
     pingPongAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    pingPongAmount.setRange(0.0, 100.0, 0.1);
     pingPongAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     pingPongAmount.setTextValueSuffix("%");
-    pingPongAmount.setValue(0.0);
 
     pingPongLabel.setText("Ping Pong", juce::dontSendNotification);
     pingPongLabel.attachToComponent(&pingPongAmount, false);
@@ -102,10 +92,8 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     /* Wet knob init */
     wetAmount.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    wetAmount.setRange(0.0, 100.0, 0.1);
     wetAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     wetAmount.setTextValueSuffix("%");
-    wetAmount.setValue(100.0);
 
     wetLabel.setText("Wet", juce::dontSendNotification);
     wetLabel.attachToComponent(&wetAmount, false);
@@ -115,7 +103,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     wetAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "WET", wetAmount));
 
     /* BPM sync initialization (NOT ENABLED YET) */
-    bpmSync.setButtonText("BPM Sync");
+    //bpmSync.setButtonText("BPM Sync");
     //addAndMakeVisible(&bpmSync);
 }
 
