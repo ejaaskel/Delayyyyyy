@@ -25,8 +25,7 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
         {
             std::make_unique<juce::AudioParameterFloat>("MAXDELAY",        // parameterID
                                                         "Max Delay",       // parameter name
-                                                        0.0f,              // minimum value
-                                                        5.0f,              // maximum value
+                                                        juce::NormalisableRange<float>(0.0f, 5.0f, 0.001f, 0.5f, false), //NormalisableRange for adding skew
                                                         1.0f),             // default value
             std::make_unique<juce::AudioParameterInt>("ECHOES",
                                                       "Echoes",
