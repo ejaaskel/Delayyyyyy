@@ -15,7 +15,9 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (400, 300);
+    setSize(450, 300);
+    setResizable(true, true);
+    setResizeLimits(450, 300, 1920, 1080);
 
     /* Delay slider init */
     delayAmount.setSliderStyle(juce::Slider::LinearVertical);
@@ -24,6 +26,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     delayLabel.setText("Max delay", juce::dontSendNotification);
     delayLabel.attachToComponent(&delayAmount, false);
+    delayLabel.setJustificationType(juce::Justification::centredBottom);
 
     delayAmount.addListener(this);
     addAndMakeVisible(&delayAmount);
@@ -63,6 +66,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     echoLabel.setText("Echoes", juce::dontSendNotification);
     echoLabel.attachToComponent(&echoAmount, false);
+    echoLabel.setJustificationType(juce::Justification::centredBottom);
 
     echoAmount.addListener(this);
     addAndMakeVisible(&echoAmount);
@@ -75,6 +79,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     decayLabel.setText("Decay Rate", juce::dontSendNotification);
     decayLabel.attachToComponent(&decayAmount, false);
+    decayLabel.setJustificationType(juce::Justification::centredBottom);
 
     addAndMakeVisible(&decayAmount);
     decayAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "DECAY", decayAmount));
@@ -86,6 +91,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     pingPongLabel.setText("Ping Pong", juce::dontSendNotification);
     pingPongLabel.attachToComponent(&pingPongAmount, false);
+    pingPongLabel.setJustificationType(juce::Justification::centredBottom);
 
     addAndMakeVisible(&pingPongAmount);
     pingPongAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "PINGPONG", pingPongAmount));
@@ -97,7 +103,7 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 
     wetLabel.setText("Wet", juce::dontSendNotification);
     wetLabel.attachToComponent(&wetAmount, false);
-    wetLabel.setJustificationType(juce::Justification::centredTop);
+    wetLabel.setJustificationType(juce::Justification::centredBottom);
 
     addAndMakeVisible(&wetAmount);
     wetAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "WET", wetAmount));
@@ -120,18 +126,32 @@ void DelayyyyyyAudioProcessorEditor::paint (juce::Graphics& g)
 
 void DelayyyyyyAudioProcessorEditor::resized()
 {
-    // TODO: Make UI scalable
-    delayAmount.setBounds(40, 40, 60, getHeight() - 60);
-    delayAmountSynced.setBounds(40, 40, 60, getHeight() - 60);
+    int marginSize = 4;
+    //Top margin is larger to accomodate the label
+    int topMarginSize = 20 + marginSize;
 
-    echoAmount.setBounds(130, 40, 60, getHeight() - 60);
+    juce::FlexBox fb;
+    fb.flexWrap = juce::FlexBox::Wrap::wrap;
+    fb.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
+    fb.alignContent = juce::FlexBox::AlignContent::stretch;
 
-    decayAmount.setBounds(200, 40, 60, 60);
-    pingPongAmount.setBounds(260, 40, 60, 60);
+    fb.items.add(juce::FlexItem(delayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
+                                            .withAlignSelf(juce::FlexItem::AlignSelf::stretch)
+                                            .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    fb.items.add(juce::FlexItem(echoAmount).withMinWidth(75.0f).withMinHeight(75.0f)
+                                           .withAlignSelf(juce::FlexItem::AlignSelf::stretch)
+                                           .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    fb.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
+                                            .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
+                                            .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    fb.items.add(juce::FlexItem(pingPongAmount).withMinWidth(75.0f).withMinHeight(75.0f)
+                                               .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
+                                               .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    fb.items.add(juce::FlexItem(wetAmount).withMinWidth(75.0f).withMinHeight(75.0f)
+                                          .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
+                                          .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
-    wetAmount.setBounds(320, getHeight() - 160, 60, 60);
-
-    bpmSync.setBounds(20, 10, 60, 20);
+    fb.performLayout(getLocalBounds().toFloat());
 }
 
 void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
