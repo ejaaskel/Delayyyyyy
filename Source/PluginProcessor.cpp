@@ -237,6 +237,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             dwp = delayBuffers[m].getDelayWritePosition();
             for (n = 0; n < buffer.getNumSamples(); n++) {
                 float inputSample = channelData[n];
+                //TODO: This line occasionally fails when changing echo amounts. Mutexing?
                 float delaySample = delayLineData[drp];
 
                 //TODO: Change this into something a bit more sensible...
