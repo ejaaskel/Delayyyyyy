@@ -3,6 +3,9 @@
 <JUCERPROJECT id="ShUTdc" name="Delayyyyyy" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="r6S8xT" name="Delayyyyyy">
+    <GROUP id="{D57948A2-0F3B-8C74-3C61-413873F61969}" name="Graphics">
+      <FILE id="ImAsfg" name="sliderThumb.svg" compile="0" resource="1" file="Graphics/sliderThumb.svg"/>
+    </GROUP>
     <GROUP id="{3C0E9CA2-6AD6-8AA2-BD57-778E761B1EAE}" name="Source">
       <FILE id="EzSQqf" name="CustomLookAndFeel.cpp" compile="1" resource="0"
             file="Source/CustomLookAndFeel.cpp"/>

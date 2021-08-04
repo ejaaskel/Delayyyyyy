@@ -4,7 +4,9 @@
 
 CustomLookAndFeel::CustomLookAndFeel() : LookAndFeel_V4()
 {
-
+    //This thing should really be done with the native draw methods, but for the sake of example it is done with an SVG file
+    std::unique_ptr<XmlElement> svg_xml_1(XmlDocument::parse(BinaryData::sliderThumb_svg));
+    sliderThumbDrawable = Drawable::createFromSVG(*svg_xml_1);
 }
 
 void CustomLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, float rotaryStartAngle, float rotaryEndAngle, Slider& slider)
@@ -45,10 +47,20 @@ void CustomLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, i
 
 void CustomLookAndFeel::drawLinearSlider(Graphics& g, int x, int y, int width, int height, float sliderPos, float minSliderPos, float maxSliderPos, const Slider::SliderStyle style, Slider& slider)
 {
+    const float centerX = x + width / 2;
+    const float centerY = y + height / 2;
 
-}
+    g.fillAll(Colours::black);
 
-void CustomLookAndFeel::drawLinearSliderThumb(Graphics& g, int x, int y, int width, int height, float sliderPos, float minSliderPos, float maxSliderPos, const Slider::SliderStyle style, Slider& slider)
-{
+    //Add a white line to mark where the slider can be slidden
+    Path middleLine;
+    middleLine.startNewSubPath(centerX, y);
+    middleLine.lineTo(centerX, y + height);
+    g.setColour(Colours::white);
+    g.strokePath(middleLine, PathStrokeType(4.0f));
 
+    //Paint the slider thumb
+    float scale = (float)width / (float)sliderThumbDrawable->getWidth();
+    float sliderHeight = (float)sliderThumbDrawable->getHeight() * scale;
+    sliderThumbDrawable->draw(g, 1.0f, AffineTransform::scale(scale, scale).translated(centerX - width / 2, sliderPos - sliderHeight / 2));
 }
