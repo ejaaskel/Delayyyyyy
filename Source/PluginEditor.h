@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "CustomSlider.h"
 
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 
@@ -33,24 +34,24 @@ private:
     // access the processor object that created it.
     DelayyyyyyAudioProcessor& audioProcessor;
 
-    juce::Slider delayAmount;
+    CustomSlider delayAmount;
     juce::Label delayLabel;
     std::unique_ptr<SliderAttachment> delayAttachment;
     juce::Slider delayAmountSynced;
 
-    juce::Slider echoAmount;
+    CustomSlider echoAmount;
     std::unique_ptr<SliderAttachment> echoAttachment;
     juce::Label echoLabel;
 
     juce::Label  decayLabel;
-    juce::Slider decayAmount;
+    CustomSlider decayAmount;
     std::unique_ptr<SliderAttachment> decayAttachment;
     juce::Label  pingPongLabel;
-    juce::Slider pingPongAmount;
+    CustomSlider pingPongAmount;
     std::unique_ptr<SliderAttachment> pingPongAttachment;
 
     juce::Label  wetLabel;
-    juce::Slider wetAmount;
+    CustomSlider wetAmount;
     std::unique_ptr<SliderAttachment> wetAttachment;
 
     juce::ToggleButton bpmSync;
