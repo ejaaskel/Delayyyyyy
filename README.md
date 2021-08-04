@@ -10,7 +10,7 @@ Still working on this to get it into a bit more presentable shape, but it alread
 - VST support (it may work as a VST plugin, I haven't tried it)
 - BPM synced delay
 - ~~Use value trees for the parameters~~ DONE
-- Custom UI (just because I want to try it out)
+- ~~Custom UI (just because I want to try it out)~~ DONE
 - Refactoring & optimizations
 - Update JUCE version
 
