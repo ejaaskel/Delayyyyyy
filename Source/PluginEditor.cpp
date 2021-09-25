@@ -197,7 +197,5 @@ void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
     resized();
-    //TODO: This should be forced when the button has been clicked, because no value has changed
-    //Or add the bpmsyncstatus check to function
     audioProcessor.setDelayBufferParams();
 }

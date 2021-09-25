@@ -75,6 +75,7 @@ private:
     float prevDelayValue = -1.0f;
     float prevSyncedDelayValue = -1.0f;
     float prevEchoValue = -1.0f;
+    float prevBpmSyncValue = -1.0f;
 
     bool bpmSync = false;
     float bpm = 120.0f;

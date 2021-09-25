@@ -161,13 +161,17 @@ float DelayyyyyyAudioProcessor::getSyncedDelay(int index) {
 }
 
 void DelayyyyyyAudioProcessor::setDelayBufferParams() {
-    if (*delayParameter == prevDelayValue && *echoParameter == prevEchoValue && *syncedDelayParameter == prevSyncedDelayValue) {
+    if (*delayParameter == prevDelayValue &&
+        *echoParameter == prevEchoValue &&
+        *syncedDelayParameter == prevSyncedDelayValue &&
+        *bpmSyncParameter == prevBpmSyncValue) {
         return;
     }
     else {
         prevDelayValue = *delayParameter;
         prevEchoValue = *echoParameter;
         prevSyncedDelayValue = *syncedDelayParameter;
+        prevBpmSyncValue = *bpmSyncParameter;
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
