@@ -175,12 +175,14 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
-    int maxDelayBufferSize = (int)(BUFFER_MAX_LEN_SEC * currentSampleRate);
     for (int i = (int)*echoParameter - 1; i >= 0; i = i - 1) {
-        int divider = juce::jmax(1, 2 * i);
         int delayInSamples = 0;
 
-        if (*bpmSyncParameter) {
+        if (!*bpmSyncParameter) {
+            int divider = juce::jmax(1, 2 * i);
+            delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
+        }
+        else {
             //Magic number 60 comes from the amount of seconds in a minute
             //Magic number 4 comes from the time signature 4/4
             //Other time signatures are out of scope for this project (PRs welcome of course :))
@@ -191,15 +193,13 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
                 delayInSamples = ((float)durationOfBar * (float)currentSampleRate) * syncedDelay;
             }
             else {
-                continue;
+                //Can't have shorter delay!
+                break;
             }
         }
-        else {
-            delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
-        }
         DelayBuffer newDelayBuffer;
-        //TODO: check if the size optimization makes sense in the BPM synced context
-        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), maxDelayBufferSize / divider);
+
+        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), delayInSamples + 1);
         newDelayBuffer.setDelayWritePosition(delayInSamples);
 
         newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
@@ -296,7 +296,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             dwp = delayBuffers[m].getDelayWritePosition();
             for (n = 0; n < buffer.getNumSamples(); n++) {
                 float inputSample = channelData[n];
-                //TODO: This line occasionally fails when changing echo amounts. Mutexing?
+                //TODO: This line occasionally fails when changing delay parameters. Mutexing?
                 float delaySample = delayLineData[drp];
 
                 //TODO: Change this into something a bit more sensible...

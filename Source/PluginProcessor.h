@@ -11,11 +11,6 @@
 #include <JuceHeader.h>
 #include "DelayBuffer.h"
 
-//TODO: 10 seconds is a bit much, considering the fact the maximum unsynced delay time is 5 seconds (5 seconds defined in slider
-// should consider using a define for it as well). Perhaps this should  be variable, depending on the current maximum delay size?
-//TODO: How will this work with synced delay and slow BPM?
-#define BUFFER_MAX_LEN_SEC 10
-
 //==============================================================================
 /**
 */
