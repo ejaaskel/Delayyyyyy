@@ -13,11 +13,12 @@
 #include "CustomSlider.h"
 
 typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
+typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
 //==============================================================================
 /**
 */
-class DelayyyyyyAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Slider::Listener
+class DelayyyyyyAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Slider::Listener, private juce::Button::Listener
 {
 public:
     DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioProcessor&);
@@ -29,6 +30,7 @@ public:
 
 private:
     void sliderValueChanged(juce::Slider* slider) override;
+    void buttonClicked(juce::Button* button) override;
 
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -37,7 +39,10 @@ private:
     CustomSlider delayAmount;
     juce::Label delayLabel;
     std::unique_ptr<SliderAttachment> delayAttachment;
-    juce::Slider delayAmountSynced;
+
+    CustomSlider syncedDelayAmount;
+    juce::Label syncedDelayLabel;
+    std::unique_ptr<SliderAttachment> syncedDelayAttachment;
 
     CustomSlider echoAmount;
     std::unique_ptr<SliderAttachment> echoAttachment;
@@ -55,6 +60,7 @@ private:
     std::unique_ptr<SliderAttachment> wetAttachment;
 
     juce::ToggleButton bpmSync;
+    std::unique_ptr<ButtonAttachment> bpmSyncAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessorEditor)
 };

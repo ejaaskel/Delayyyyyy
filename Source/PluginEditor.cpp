@@ -32,33 +32,46 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     addAndMakeVisible(&delayAmount);
     delayAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "MAXDELAY", delayAmount));
 
-    /* Synced delay slider init (NOT ENABLED YET) */
-    /*delayAmountSynced.setSliderStyle(juce::Slider::LinearVertical);
-    delayAmountSynced.setRange(0.0, 16, 1.0);
-    delayAmountSynced.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    delayAmountSynced.textFromValueFunction = [](double val) {
+    /* Synced delay slider init */
+    syncedDelayAmount.setSliderStyle(juce::Slider::LinearVertical);
+    syncedDelayAmount.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+
+    syncedDelayLabel.setText("Max delay", juce::dontSendNotification);
+    syncedDelayLabel.attachToComponent(&syncedDelayAmount, false);
+    syncedDelayLabel.setJustificationType(juce::Justification::centredBottom);
+
+    syncedDelayAmount.addListener(this);
+    addAndMakeVisible(&syncedDelayAmount);
+    syncedDelayAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "SYNCEDMAXDELAY", syncedDelayAmount));
+
+    syncedDelayAmount.textFromValueFunction = [](double val) {
         switch ((int)val) {
         case 0:
-            return "1/64";
-        case 1:
             return "1/32";
-        case 2:
+        case 1:
             return "1/16";
-        case 3:
+        case 2:
             return "1/8";
-        case 4:
+        case 3:
             return "1/4";
-        case 5:
+        case 4:
             return "1/2";
-        case 6:
+        case 5:
             return "1";
+        case 6:
+            return "2";
+        case 7:
+            return "4";
+        case 8:
+            return "8";
+        case 9:
+            return "16";
         }
         return "";
     };
-    delayAmountSynced.setValue(1.0);*/
-
-    //delayAmountSynced.addListener(this);
-    //addChildComponent(&delayAmountSynced);
+    //Required here, because we change the textFromValueFunction after resetting the syncedDelayAttachment.
+    //It seems like reset also resets the syncedDelayAttachment, so these are done in a bit odd order
+    syncedDelayAmount.updateText();
 
     /* Echo amount slider init */
     echoAmount.setSliderStyle(juce::Slider::LinearVertical);
@@ -108,9 +121,11 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     addAndMakeVisible(&wetAmount);
     wetAttachment.reset(new SliderAttachment(*audioProcessor.getParameters(), "WET", wetAmount));
 
-    /* BPM sync initialization (NOT ENABLED YET) */
-    //bpmSync.setButtonText("BPM Sync");
-    //addAndMakeVisible(&bpmSync);
+    /* BPM sync initialization */
+    bpmSync.setButtonText("BPM Sync");
+    addAndMakeVisible(&bpmSync);
+    bpmSync.addListener(this);
+    bpmSyncAttachment.reset(new ButtonAttachment(*audioProcessor.getParameters(), "BPMSYNC", bpmSync));
 }
 
 DelayyyyyyAudioProcessorEditor::~DelayyyyyyAudioProcessorEditor()
@@ -135,12 +150,30 @@ void DelayyyyyyAudioProcessorEditor::resized()
     fb.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
     fb.alignContent = juce::FlexBox::AlignContent::stretch;
 
-    fb.items.add(juce::FlexItem(delayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                            .withAlignSelf(juce::FlexItem::AlignSelf::stretch)
-                                            .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
-    fb.items.add(juce::FlexItem(echoAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                           .withAlignSelf(juce::FlexItem::AlignSelf::stretch)
-                                           .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    juce::FlexBox delayBox;
+    delayBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    delayBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    if (!bpmSync.getToggleState()) {
+        delayAmount.setVisible(true);
+        syncedDelayAmount.setVisible(false);
+        delayBox.items.add(juce::FlexItem(delayAmount).withMinWidth(75.0f).withMinHeight(200.0f));
+    }
+    else {
+        delayAmount.setVisible(false);
+        syncedDelayAmount.setVisible(true);
+        delayBox.items.add(juce::FlexItem(syncedDelayAmount).withMinWidth(75.0f).withMinHeight(200.0f));
+    }
+    delayBox.items.add(juce::FlexItem(bpmSync).withMinWidth(75.0f).withMinHeight(15.0f));
+    fb.items.add(juce::FlexItem(delayBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+
+    juce::FlexBox echoBox;
+    echoBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    echoBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    echoBox.items.add(juce::FlexItem(echoAmount).withMinWidth(75.0f).withMinHeight(200.0f));
+    //Add an empty item to level the bottom with the delay slider
+    echoBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(15.0f));
+
+    fb.items.add(juce::FlexItem(echoBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
     fb.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
                                             .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
                                             .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
@@ -156,7 +189,13 @@ void DelayyyyyyAudioProcessorEditor::resized()
 
 void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
-    if (slider == &delayAmount || slider == &echoAmount) {
+    if (slider == &delayAmount || slider == &syncedDelayAmount || slider == &echoAmount) {
         audioProcessor.setDelayBufferParams();
     }
+}
+
+void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
+{
+    resized();
+    audioProcessor.setDelayBufferParams();
 }

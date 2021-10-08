@@ -11,10 +11,6 @@
 #include <JuceHeader.h>
 #include "DelayBuffer.h"
 
-//TODO: 10 seconds is a bit much, considering the fact the maximum unsynced delay time is 5 seconds (5 seconds defined in slider
-// should consider using a define for it as well). Perhaps this should  be variable, depending on the current maximum delay size?
-#define BUFFER_MAX_LEN_SEC 10
-
 //==============================================================================
 /**
 */
@@ -54,6 +50,7 @@ public:
     const juce::String getProgramName (int index) override;
     void changeProgramName (int index, const juce::String& newName) override;
 
+    float getSyncedDelay(int index);
     void setDelayBufferParams();
 
     //==============================================================================
@@ -71,13 +68,20 @@ private:
     double currentSampleRate = 44100;
 
     float prevDelayValue = -1.0f;
+    float prevSyncedDelayValue = -1.0f;
     float prevEchoValue = -1.0f;
+    float prevBpmSyncValue = -1.0f;
+
+    bool bpmSync = false;
+    float bpm = 120.0f;
 
     std::atomic<float>* delayParameter = nullptr;
+    std::atomic<float>* syncedDelayParameter = nullptr;
     std::atomic<float>* echoParameter = nullptr;
     std::atomic<float>* decayParameter = nullptr;
     std::atomic<float>* pingPongParameter = nullptr;
     std::atomic<float>* wetParameter = nullptr;
+    std::atomic<float>* bpmSyncParameter = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessor)
 };

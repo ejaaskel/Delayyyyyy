@@ -27,6 +27,11 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
                                                         "Max Delay",       // parameter name
                                                         juce::NormalisableRange<float>(0.0f, 5.0f, 0.001f, 0.5f, false), //NormalisableRange for adding skew
                                                         1.0f),             // default value
+            std::make_unique<juce::AudioParameterInt>("SYNCEDMAXDELAY",
+                                                      "Synced Max Delay",
+                                                      0,
+                                                      9,
+                                                      3),
             std::make_unique<juce::AudioParameterInt>("ECHOES",
                                                       "Echoes",
                                                       0,
@@ -47,13 +52,18 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
                                                         0.0f,
                                                         100.0f,
                                                         100.0f),
+            std::make_unique<juce::AudioParameterBool>("BPMSYNC",
+                                                       "BPM Sync",
+                                                       false),
         })
 {
     delayParameter = parameters.getRawParameterValue("MAXDELAY");
+    syncedDelayParameter = parameters.getRawParameterValue("SYNCEDMAXDELAY");
     echoParameter = parameters.getRawParameterValue("ECHOES");
     decayParameter = parameters.getRawParameterValue("DECAY");
     pingPongParameter = parameters.getRawParameterValue("PINGPONG");
     wetParameter = parameters.getRawParameterValue("WET");
+    bpmSyncParameter = parameters.getRawParameterValue("BPMSYNC");
 }
 
 DelayyyyyyAudioProcessor::~DelayyyyyyAudioProcessor()
@@ -122,25 +132,74 @@ void DelayyyyyyAudioProcessor::changeProgramName (int index, const juce::String&
 {
 }
 
+float DelayyyyyyAudioProcessor::getSyncedDelay(int index) {
+    switch (index) {
+    case 0:
+        return 1.0f/32.0f;
+    case 1:
+        return 1.0f/16.0f;
+    case 2:
+        return 1.0f/8.0f;
+    case 3:
+        return 1.0f/4.0f;
+    case 4:
+        return 1.0f/2.0f;
+    case 5:
+        return 1;
+    case 6:
+        return 2;
+    case 7:
+        return 4;
+    case 8:
+        return 8;
+    case 9:
+        return 16;
+    default:
+        return -1;
+
+    }
+}
+
 void DelayyyyyyAudioProcessor::setDelayBufferParams() {
-    if (*delayParameter == prevDelayValue && *echoParameter == prevEchoValue) {
+    if (*delayParameter == prevDelayValue &&
+        *echoParameter == prevEchoValue &&
+        *syncedDelayParameter == prevSyncedDelayValue &&
+        *bpmSyncParameter == prevBpmSyncValue) {
         return;
     }
     else {
         prevDelayValue = *delayParameter;
         prevEchoValue = *echoParameter;
+        prevSyncedDelayValue = *syncedDelayParameter;
+        prevBpmSyncValue = *bpmSyncParameter;
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
-    int maxDelayBufferSize = (int)(BUFFER_MAX_LEN_SEC * currentSampleRate);
     for (int i = (int)*echoParameter - 1; i >= 0; i = i - 1) {
+        int delayInSamples = 0;
+
+        if (!*bpmSyncParameter) {
+            int divider = juce::jmax(1, 2 * i);
+            delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
+        }
+        else {
+            //Magic number 60 comes from the amount of seconds in a minute
+            //Magic number 4 comes from the time signature 4/4
+            //Other time signatures are out of scope for this project (PRs welcome of course :))
+            float durationOfBar = 60.0f / bpm * 4.0f;
+
+            float syncedDelay = getSyncedDelay(*syncedDelayParameter - i);
+            if (syncedDelay != -1) {
+                delayInSamples = ((float)durationOfBar * (float)currentSampleRate) * syncedDelay;
+            }
+            else {
+                //Can't have shorter delay!
+                break;
+            }
+        }
         DelayBuffer newDelayBuffer;
 
-        int divider = juce::jmax(1, 2 * i);
-
-        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), maxDelayBufferSize / divider);
-
-        int delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
+        newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), delayInSamples + 1);
         newDelayBuffer.setDelayWritePosition(delayInSamples);
 
         newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
@@ -237,7 +296,7 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             dwp = delayBuffers[m].getDelayWritePosition();
             for (n = 0; n < buffer.getNumSamples(); n++) {
                 float inputSample = channelData[n];
-                //TODO: This line occasionally fails when changing echo amounts. Mutexing?
+                //TODO: This line occasionally fails when changing delay parameters. Mutexing?
                 float delaySample = delayLineData[drp];
 
                 //TODO: Change this into something a bit more sensible...
