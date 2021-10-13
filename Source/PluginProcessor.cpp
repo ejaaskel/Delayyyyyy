@@ -193,8 +193,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
                 delayInSamples = ((float)durationOfBar * (float)currentSampleRate) * syncedDelay;
             }
             else {
-                //Can't have shorter delay!
-                break;
+                continue;
             }
         }
         DelayBuffer newDelayBuffer;
