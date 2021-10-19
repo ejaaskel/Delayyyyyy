@@ -55,7 +55,8 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
             std::make_unique<juce::AudioParameterBool>("BPMSYNC",
                                                        "BPM Sync",
                                                        false),
-        })
+        }),
+    Thread("DelayBufferParamsThread")
 {
     delayParameter = parameters.getRawParameterValue("MAXDELAY");
     syncedDelayParameter = parameters.getRawParameterValue("SYNCEDMAXDELAY");
@@ -68,7 +69,18 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
 
 DelayyyyyyAudioProcessor::~DelayyyyyyAudioProcessor()
 {
+    stopThread(100);
 }
+
+void DelayyyyyyAudioProcessor::run()
+{
+    while (!threadShouldExit())
+    {
+        setDelayBufferParams();
+        wait(50);
+    }
+}
+
 
 //==============================================================================
 const juce::String DelayyyyyyAudioProcessor::getName() const
@@ -164,7 +176,8 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
     if (*delayParameter == prevDelayValue &&
         *echoParameter == prevEchoValue &&
         *syncedDelayParameter == prevSyncedDelayValue &&
-        *bpmSyncParameter == prevBpmSyncValue) {
+        *bpmSyncParameter == prevBpmSyncValue &&
+        bpm == nextBpmValue) {
         return;
     }
     else {
@@ -172,6 +185,14 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         prevEchoValue = *echoParameter;
         prevSyncedDelayValue = *syncedDelayParameter;
         prevBpmSyncValue = *bpmSyncParameter;
+        bpm = nextBpmValue;
+    }
+
+    if (isPlaying) {
+        //Reset before waiting so that we continue right after the processBlock has finished
+        //Basically making the value changes a bit slower, but giving processBlock priority to these resources
+        delayBufferWait.reset();
+        delayBufferWait.wait();
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
@@ -204,6 +225,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
     }
     delayBuffers = newDelayBuffers;
+    delayBufferWait.signal();
 }
 
 //==============================================================================
@@ -213,13 +235,15 @@ void DelayyyyyyAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // initialisation that you need..
 
     currentSampleRate = sampleRate;
-    setDelayBufferParams();
+    startThread();
+    isPlaying = true;
 }
 
 void DelayyyyyyAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    isPlaying = false;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -277,6 +301,8 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     float currentDecay = 1.0f - (*decayParameter / 100.0f);
     float currentPingPong = *pingPongParameter / 100.0f;
     float currentWet = *wetParameter / 100.0f;
+
+    juce::AudioPlayHead* ph = getPlayHead();
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
@@ -343,6 +369,20 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     buffer.copyFrom(0, 0, newOutputBuffer.getReadPointer(0), newOutputBuffer.getNumSamples());
     buffer.copyFrom(1, 0, newOutputBuffer.getReadPointer(1), newOutputBuffer.getNumSamples());
+
+    delayBufferWait.signal();
+    if (*bpmSyncParameter && ph) {
+        ph->getCurrentPosition(currentPositionInfo);
+        nextBpmValue = currentPositionInfo.bpm;
+        if (nextBpmValue != bpm) {
+            notifyThread();
+        }
+    }
+}
+
+void DelayyyyyyAudioProcessor::notifyThread()
+{
+    notify();
 }
 
 //==============================================================================

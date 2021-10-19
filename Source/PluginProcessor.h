@@ -14,12 +14,14 @@
 //==============================================================================
 /**
 */
-class DelayyyyyyAudioProcessor  : public juce::AudioProcessor
+class DelayyyyyyAudioProcessor  : public juce::AudioProcessor, private juce::Thread
 {
 public:
     //==============================================================================
     DelayyyyyyAudioProcessor();
     ~DelayyyyyyAudioProcessor() override;
+
+    void run() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -52,7 +54,7 @@ public:
 
     float getSyncedDelay(int index);
     void setDelayBufferParams();
-
+    void notifyThread();
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
@@ -62,15 +64,22 @@ public:
 private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
+    juce::AudioPlayHead::CurrentPositionInfo currentPositionInfo;
+
+    juce::WaitableEvent delayBufferWait;
 
     std::vector<DelayBuffer> delayBuffers;
 
     double currentSampleRate = 44100;
+    bool isPlaying = false;
 
     float prevDelayValue = -1.0f;
     float prevSyncedDelayValue = -1.0f;
     float prevEchoValue = -1.0f;
     float prevBpmSyncValue = -1.0f;
+
+    //BPM behaves a bit differently, as it's value is fetched from playhead, not UI
+    float nextBpmValue = 120.0f;
 
     bool bpmSync = false;
     float bpm = 120.0f;

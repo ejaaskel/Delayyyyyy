@@ -190,12 +190,12 @@ void DelayyyyyyAudioProcessorEditor::resized()
 void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
     if (slider == &delayAmount || slider == &syncedDelayAmount || slider == &echoAmount) {
-        audioProcessor.setDelayBufferParams();
+        audioProcessor.notifyThread();
     }
 }
 
 void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
     resized();
-    audioProcessor.setDelayBufferParams();
+    audioProcessor.notifyThread();
 }
