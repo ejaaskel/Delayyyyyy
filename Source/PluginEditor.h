@@ -36,6 +36,11 @@ private:
     // access the processor object that created it.
     DelayyyyyyAudioProcessor& audioProcessor;
 
+    juce::Label pluginTitle;
+    juce::Label pluginCredits;
+
+    juce::Rectangle<int> headerSeparator;
+
     CustomSlider delayAmount;
     juce::Label delayLabel;
     std::unique_ptr<SliderAttachment> delayAttachment;
@@ -61,6 +66,8 @@ private:
 
     juce::ToggleButton bpmSync;
     std::unique_ptr<ButtonAttachment> bpmSyncAttachment;
+
+    juce::Label versionLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessorEditor)
 };
