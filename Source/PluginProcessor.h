@@ -73,10 +73,10 @@ private:
     double currentSampleRate = 44100;
     bool isPlaying = false;
 
-    float prevDelayValue = -1.0f;
-    float prevSyncedDelayValue = -1.0f;
-    float prevEchoValue = -1.0f;
-    float prevBpmSyncValue = -1.0f;
+    float prevDelayValue = 1.0f;
+    float prevSyncedDelayValue = 3.0f;
+    float prevEchoValue = 3.0f;
+    float prevBpmSyncValue = 0.0f;
 
     //BPM behaves a bit differently, as it's value is fetched from playhead, not UI
     float nextBpmValue = 120.0f;
