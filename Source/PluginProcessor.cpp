@@ -77,7 +77,7 @@ void DelayyyyyyAudioProcessor::run()
     while (!threadShouldExit())
     {
         setDelayBufferParams();
-        wait(50);
+        wait(-1);
     }
 }
 
@@ -188,14 +188,10 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         bpm = nextBpmValue;
     }
 
-    if (isPlaying) {
-        //Reset before waiting so that we continue right after the processBlock has finished
-        //Basically making the value changes a bit slower, but giving processBlock priority to these resources
-        delayBufferWait.reset();
-        delayBufferWait.wait();
-    }
-
     std::vector<DelayBuffer> newDelayBuffers;
+
+    delayBufferWait.wait();
+
     for (int i = (int)*echoParameter - 1; i >= 0; i = i - 1) {
         int delayInSamples = 0;
 
@@ -236,7 +232,6 @@ void DelayyyyyyAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 
     currentSampleRate = sampleRate;
     startThread();
-    isPlaying = true;
 }
 
 void DelayyyyyyAudioProcessor::releaseResources()
@@ -302,7 +297,12 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     float currentPingPong = *pingPongParameter / 100.0f;
     float currentWet = *wetParameter / 100.0f;
 
-    juce::AudioPlayHead* ph = getPlayHead();
+    if (isPlaying) {
+        delayBufferWait.wait();
+    }
+    else {
+        isPlaying = true;
+    }
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
@@ -367,10 +367,12 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         delayBuffers[m].setDelayWritePosition((dwp + buffer.getNumSamples()) % curDelayBufferSize);
     }
 
+    delayBufferWait.signal();
+
     buffer.copyFrom(0, 0, newOutputBuffer.getReadPointer(0), newOutputBuffer.getNumSamples());
     buffer.copyFrom(1, 0, newOutputBuffer.getReadPointer(1), newOutputBuffer.getNumSamples());
 
-    delayBufferWait.signal();
+    juce::AudioPlayHead* ph = getPlayHead();
     if (*bpmSyncParameter && ph) {
         ph->getCurrentPosition(currentPositionInfo);
         nextBpmValue = currentPositionInfo.bpm;
