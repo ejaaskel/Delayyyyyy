@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="ShUTdc" name="Delayyyyyy" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
-              version="0.1.0">
+              version="0.1.0" companyName="Surku Music">
   <MAINGROUP id="r6S8xT" name="Delayyyyyy">
     <GROUP id="{D57948A2-0F3B-8C74-3C61-413873F61969}" name="Graphics">
       <FILE id="ImAsfg" name="sliderThumb.svg" compile="0" resource="1" file="Graphics/sliderThumb.svg"/>
