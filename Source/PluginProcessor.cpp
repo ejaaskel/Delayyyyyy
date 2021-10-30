@@ -55,7 +55,8 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
             std::make_unique<juce::AudioParameterBool>("BPMSYNC",
                                                        "BPM Sync",
                                                        false),
-        })
+        }),
+    Thread("DelayBufferParamsThread")
 {
     delayParameter = parameters.getRawParameterValue("MAXDELAY");
     syncedDelayParameter = parameters.getRawParameterValue("SYNCEDMAXDELAY");
@@ -68,7 +69,18 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
 
 DelayyyyyyAudioProcessor::~DelayyyyyyAudioProcessor()
 {
+    stopThread(100);
 }
+
+void DelayyyyyyAudioProcessor::run()
+{
+    while (!threadShouldExit())
+    {
+        setDelayBufferParams();
+        wait(-1);
+    }
+}
+
 
 //==============================================================================
 const juce::String DelayyyyyyAudioProcessor::getName() const
@@ -164,7 +176,8 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
     if (*delayParameter == prevDelayValue &&
         *echoParameter == prevEchoValue &&
         *syncedDelayParameter == prevSyncedDelayValue &&
-        *bpmSyncParameter == prevBpmSyncValue) {
+        *bpmSyncParameter == prevBpmSyncValue &&
+        bpm == nextBpmValue) {
         return;
     }
     else {
@@ -172,9 +185,13 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         prevEchoValue = *echoParameter;
         prevSyncedDelayValue = *syncedDelayParameter;
         prevBpmSyncValue = *bpmSyncParameter;
+        bpm = nextBpmValue;
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
+
+    delayBufferWait.wait();
+
     for (int i = (int)*echoParameter - 1; i >= 0; i = i - 1) {
         int delayInSamples = 0;
 
@@ -193,8 +210,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
                 delayInSamples = ((float)durationOfBar * (float)currentSampleRate) * syncedDelay;
             }
             else {
-                //Can't have shorter delay!
-                break;
+                continue;
             }
         }
         DelayBuffer newDelayBuffer;
@@ -205,6 +221,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
     }
     delayBuffers = newDelayBuffers;
+    delayBufferWait.signal();
 }
 
 //==============================================================================
@@ -214,13 +231,14 @@ void DelayyyyyyAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // initialisation that you need..
 
     currentSampleRate = sampleRate;
-    setDelayBufferParams();
+    startThread();
 }
 
 void DelayyyyyyAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    isPlaying = false;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -278,6 +296,13 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     float currentDecay = 1.0f - (*decayParameter / 100.0f);
     float currentPingPong = *pingPongParameter / 100.0f;
     float currentWet = *wetParameter / 100.0f;
+
+    if (isPlaying) {
+        delayBufferWait.wait();
+    }
+    else {
+        isPlaying = true;
+    }
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
@@ -342,8 +367,24 @@ void DelayyyyyyAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         delayBuffers[m].setDelayWritePosition((dwp + buffer.getNumSamples()) % curDelayBufferSize);
     }
 
+    delayBufferWait.signal();
+
     buffer.copyFrom(0, 0, newOutputBuffer.getReadPointer(0), newOutputBuffer.getNumSamples());
     buffer.copyFrom(1, 0, newOutputBuffer.getReadPointer(1), newOutputBuffer.getNumSamples());
+
+    juce::AudioPlayHead* ph = getPlayHead();
+    if (*bpmSyncParameter && ph) {
+        ph->getCurrentPosition(currentPositionInfo);
+        nextBpmValue = currentPositionInfo.bpm;
+        if (nextBpmValue != bpm) {
+            notifyThread();
+        }
+    }
+}
+
+void DelayyyyyyAudioProcessor::notifyThread()
+{
+    notify();
 }
 
 //==============================================================================
@@ -358,17 +399,22 @@ juce::AudioProcessorEditor* DelayyyyyyAudioProcessor::createEditor()
 }
 
 //==============================================================================
-void DelayyyyyyAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void DelayyyyyyAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
-void DelayyyyyyAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void DelayyyyyyAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+
+    if (xmlState.get() != nullptr) {
+        if (xmlState->hasTagName(parameters.state.getType())) {
+            parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
+        }
+    }
 }
 
 //==============================================================================

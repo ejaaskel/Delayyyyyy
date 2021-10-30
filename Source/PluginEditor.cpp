@@ -15,9 +15,23 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize(450, 300);
+    setSize(450, 350);
     setResizable(true, true);
-    setResizeLimits(450, 300, 1920, 1080);
+    setResizeLimits(450, 350, 1920, 1080);
+
+    /* Header plugin title */
+    pluginTitle.setText(JucePlugin_Name, juce::dontSendNotification);
+    pluginTitle.setJustificationType(juce::Justification::centredLeft);
+    juce::Font titleFont = pluginTitle.getFont();
+    titleFont.setHeight(20);
+    titleFont.setBold(true);
+    pluginTitle.setFont(titleFont);
+    addAndMakeVisible(pluginTitle);
+
+    /* Header plugin credits */
+    pluginCredits.setText("Made by Surku\n@surkumusic", juce::dontSendNotification);
+    pluginCredits.setJustificationType(juce::Justification::centredRight);
+    addAndMakeVisible(pluginCredits);
 
     /* Delay slider init */
     delayAmount.setSliderStyle(juce::Slider::LinearVertical);
@@ -126,6 +140,12 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     addAndMakeVisible(&bpmSync);
     bpmSync.addListener(this);
     bpmSyncAttachment.reset(new ButtonAttachment(*audioProcessor.getParameters(), "BPMSYNC", bpmSync));
+
+    /* Version info*/
+    versionLabel.setText("Version:\n" + juce::String(JucePlugin_VersionString), juce::dontSendNotification);
+    versionLabel.setJustificationType(juce::Justification::bottomRight);
+    versionLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colours::grey);
+    addAndMakeVisible(versionLabel);
 }
 
 DelayyyyyyAudioProcessorEditor::~DelayyyyyyAudioProcessorEditor()
@@ -137,19 +157,33 @@ void DelayyyyyyAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (Colours::black);
+
+    g.setColour(Colours::azure);
+    g.fillRect(headerSeparator);
 }
 
 void DelayyyyyyAudioProcessorEditor::resized()
 {
+    int headerSize = 40;
     int marginSize = 4;
     //Top margin is larger to accomodate the label
     int topMarginSize = 20 + marginSize;
 
+    /*Header*/
+    Rectangle<int> area = getLocalBounds();
+    int headerFooterHeight = headerSize;
+    Rectangle<int> header = area.removeFromTop(headerFooterHeight);
+    pluginTitle.setBounds(header.removeFromLeft(header.getWidth() / 2));
+    pluginCredits.setBounds(header);
+    headerSeparator = area.removeFromTop(3);
+
+    /*FlexBox for the actual content*/
     juce::FlexBox fb;
     fb.flexWrap = juce::FlexBox::Wrap::wrap;
     fb.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
     fb.alignContent = juce::FlexBox::AlignContent::stretch;
 
+    /*Delay amount slider + BPM sync button*/
     juce::FlexBox delayBox;
     delayBox.flexWrap = juce::FlexBox::Wrap::wrap;
     delayBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
@@ -166,6 +200,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
     delayBox.items.add(juce::FlexItem(bpmSync).withMinWidth(75.0f).withMinHeight(15.0f));
     fb.items.add(juce::FlexItem(delayBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
+    /*Echo amount slider*/
     juce::FlexBox echoBox;
     echoBox.flexWrap = juce::FlexBox::Wrap::wrap;
     echoBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
@@ -174,28 +209,37 @@ void DelayyyyyyAudioProcessorEditor::resized()
     echoBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(15.0f));
 
     fb.items.add(juce::FlexItem(echoBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+
+    /*Decay knob*/
     fb.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
                                             .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
                                             .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+
+    /*Ping Pong knob*/
     fb.items.add(juce::FlexItem(pingPongAmount).withMinWidth(75.0f).withMinHeight(75.0f)
                                                .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
                                                .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
-    fb.items.add(juce::FlexItem(wetAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                          .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
-                                          .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
-    fb.performLayout(getLocalBounds().toFloat());
+    /*FlexBox for wet knob and version label*/
+    juce::FlexBox wetBox;
+    wetBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    wetBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    wetBox.items.add(juce::FlexItem(wetAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    wetBox.items.add(juce::FlexItem(versionLabel).withMinWidth(75.0f).withMinHeight(30.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexEnd));
+    fb.items.add(juce::FlexItem(wetBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+
+    fb.performLayout(area.toFloat());
 }
 
 void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
     if (slider == &delayAmount || slider == &syncedDelayAmount || slider == &echoAmount) {
-        audioProcessor.setDelayBufferParams();
+        audioProcessor.notifyThread();
     }
 }
 
 void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
     resized();
-    audioProcessor.setDelayBufferParams();
+    audioProcessor.notifyThread();
 }
