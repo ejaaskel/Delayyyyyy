@@ -91,6 +91,7 @@ private:
     std::atomic<float>* pingPongParameter = nullptr;
     std::atomic<float>* wetParameter = nullptr;
     std::atomic<float>* bpmSyncParameter = nullptr;
+    std::atomic<float>* delayModeParameter = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessor)
 };
