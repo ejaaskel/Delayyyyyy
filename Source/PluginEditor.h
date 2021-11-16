@@ -28,9 +28,16 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    enum RadioButtonIds
+    {
+        DelayModeButtons = 1001
+    };
+
 private:
     void sliderValueChanged(juce::Slider* slider) override;
     void buttonClicked(juce::Button* button) override;
+
+    void updateToggleState(juce::Button* button, juce::String name);
 
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -68,6 +75,11 @@ private:
     std::unique_ptr<ButtonAttachment> bpmSyncAttachment;
 
     juce::Label versionLabel;
+
+    juce::Label delayModeLabel;
+    juce::ToggleButton expandModeButton{ "Expand" },
+                       evenModeButton{ "Even" },
+                       shrinkModeButton{ "Shrink" };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayyyyyyAudioProcessorEditor)
 };

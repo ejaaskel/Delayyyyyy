@@ -146,6 +146,31 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     versionLabel.setJustificationType(juce::Justification::bottomRight);
     versionLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colours::grey);
     addAndMakeVisible(versionLabel);
+
+    /* Delay modes */
+    delayModeLabel.setText("Delay Mode", juce::dontSendNotification);
+    delayModeLabel.setJustificationType(juce::Justification::centredBottom);
+    addAndMakeVisible(delayModeLabel);
+
+    expandModeButton.onClick = [this] { updateToggleState(&expandModeButton, "Expand");   };
+    expandModeButton.setRadioGroupId(DelayModeButtons);
+    addAndMakeVisible(expandModeButton);
+
+    evenModeButton.onClick = [this] { updateToggleState(&evenModeButton, "Even"); };
+    evenModeButton.setRadioGroupId(DelayModeButtons);
+    addAndMakeVisible(evenModeButton);
+
+    shrinkModeButton.onClick = [this] { updateToggleState(&shrinkModeButton, "Shrink"); };
+    shrinkModeButton.setRadioGroupId(DelayModeButtons);
+    addAndMakeVisible(shrinkModeButton);
+}
+
+void DelayyyyyyAudioProcessorEditor::updateToggleState(juce::Button* button, juce::String name)
+{
+    auto state = button->getToggleState();
+    juce::String stateString = state ? "ON" : "OFF";
+
+    juce::Logger::outputDebugString(name + " Button changed to " + stateString);
 }
 
 DelayyyyyyAudioProcessorEditor::~DelayyyyyyAudioProcessorEditor()
@@ -207,25 +232,37 @@ void DelayyyyyyAudioProcessorEditor::resized()
     echoBox.items.add(juce::FlexItem(echoAmount).withMinWidth(75.0f).withMinHeight(200.0f));
     //Add an empty item to level the bottom with the delay slider
     echoBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(15.0f));
-
     fb.items.add(juce::FlexItem(echoBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     /*Decay knob*/
-    fb.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                            .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
-                                            .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    juce::FlexBox decayBox;
+    decayBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    decayBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    decayBox.flexDirection = juce::FlexBox::Direction::column;
+    decayBox.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    decayBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(50.0f));
+    decayBox.items.add(juce::FlexItem(expandModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    fb.items.add(juce::FlexItem(decayBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     /*Ping Pong knob*/
-    fb.items.add(juce::FlexItem(pingPongAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                               .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
-                                               .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    juce::FlexBox pingPongBox;
+    pingPongBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    pingPongBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    pingPongBox.flexDirection = juce::FlexBox::Direction::column;
+    pingPongBox.items.add(juce::FlexItem(pingPongAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    pingPongBox.items.add(juce::FlexItem(delayModeLabel).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    pingPongBox.items.add(juce::FlexItem(evenModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    fb.items.add(juce::FlexItem(pingPongBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     /*FlexBox for wet knob and version label*/
     juce::FlexBox wetBox;
     wetBox.flexWrap = juce::FlexBox::Wrap::wrap;
     wetBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    wetBox.flexDirection = juce::FlexBox::Direction::column;
     wetBox.items.add(juce::FlexItem(wetAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
-    wetBox.items.add(juce::FlexItem(versionLabel).withMinWidth(75.0f).withMinHeight(30.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexEnd));
+    wetBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(50.0f));
+    wetBox.items.add(juce::FlexItem(shrinkModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    wetBox.items.add(juce::FlexItem(versionLabel).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart).withFlex(1));
     fb.items.add(juce::FlexItem(wetBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     fb.performLayout(area.toFloat());
