@@ -61,6 +61,13 @@ public:
 
     juce::AudioProcessorValueTreeState* getParameters(void);
 
+    enum class DelayModes
+    {
+        EXPAND, EVEN, SHRINK
+    };
+    void setDelayMode(DelayModes mode);
+    DelayModes getDelayMode();
+
 private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
@@ -77,6 +84,7 @@ private:
     float prevSyncedDelayValue = -1.0f;
     float prevEchoValue = -1.0f;
     float prevBpmSyncValue = -1.0f;
+    float prevDelayModeValue = -1.0f;
 
     //BPM behaves a bit differently, as it's value is fetched from playhead, not UI
     float nextBpmValue = 120.0f;

@@ -165,14 +165,6 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     addAndMakeVisible(shrinkModeButton);
 }
 
-void DelayyyyyyAudioProcessorEditor::updateToggleState(juce::Button* button, juce::String name)
-{
-    auto state = button->getToggleState();
-    juce::String stateString = state ? "ON" : "OFF";
-
-    juce::Logger::outputDebugString(name + " Button changed to " + stateString);
-}
-
 DelayyyyyyAudioProcessorEditor::~DelayyyyyyAudioProcessorEditor()
 {
 }
@@ -185,6 +177,19 @@ void DelayyyyyyAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setColour(Colours::azure);
     g.fillRect(headerSeparator);
+
+    /* Active delay mode toggle set (required when loading plugin) */
+    switch (audioProcessor.getDelayMode()) {
+        case DelayyyyyyAudioProcessor::DelayModes::EXPAND:
+            expandModeButton.setToggleState(true, juce::sendNotificationSync);
+            break;
+        case DelayyyyyyAudioProcessor::DelayModes::EVEN:
+            evenModeButton.setToggleState(true, juce::sendNotificationSync);
+            break;
+        case DelayyyyyyAudioProcessor::DelayModes::SHRINK:
+            shrinkModeButton.setToggleState(true, juce::sendNotificationSync);
+            break;
+    }
 }
 
 void DelayyyyyyAudioProcessorEditor::resized()
@@ -279,4 +284,22 @@ void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
     resized();
     audioProcessor.notifyThread();
+}
+
+void DelayyyyyyAudioProcessorEditor::updateToggleState(juce::ToggleButton* button, juce::String name)
+{
+    bool state = button->getToggleState();
+
+    if (state) {
+        if (button == &expandModeButton) {
+            audioProcessor.setDelayMode(DelayyyyyyAudioProcessor::DelayModes::EXPAND);
+        }
+        else if (button == &evenModeButton) {
+            audioProcessor.setDelayMode(DelayyyyyyAudioProcessor::DelayModes::EVEN);
+        }
+        else if (button == &shrinkModeButton) {
+            audioProcessor.setDelayMode(DelayyyyyyAudioProcessor::DelayModes::SHRINK);
+        }
+        audioProcessor.notifyThread();
+    }
 }

@@ -178,12 +178,32 @@ float DelayyyyyyAudioProcessor::getSyncedDelay(int index) {
     }
 }
 
+void DelayyyyyyAudioProcessor::setDelayMode(DelayyyyyyAudioProcessor::DelayModes mode) {
+    juce::RangedAudioParameter *delayModeRangedParameter = parameters.getParameter("DELAYMODE");
+    float scaledValue = delayModeRangedParameter->convertTo0to1((int)mode);
+    delayModeRangedParameter->beginChangeGesture();
+    delayModeRangedParameter->setValueNotifyingHost(scaledValue);
+    delayModeRangedParameter->endChangeGesture();
+}
+
+DelayyyyyyAudioProcessor::DelayModes DelayyyyyyAudioProcessor::getDelayMode() {
+    switch ((int)*delayModeParameter) {
+        case (int)DelayModes::EXPAND:
+            return DelayModes::EXPAND;
+        case (int)DelayModes::EVEN:
+            return DelayModes::EVEN;
+        case (int)DelayModes::SHRINK:
+            return DelayModes::SHRINK;
+    }
+}
+
 void DelayyyyyyAudioProcessor::setDelayBufferParams() {
     if (*delayParameter == prevDelayValue &&
         *echoParameter == prevEchoValue &&
         *syncedDelayParameter == prevSyncedDelayValue &&
         *bpmSyncParameter == prevBpmSyncValue &&
-        bpm == nextBpmValue) {
+        bpm == nextBpmValue &&
+        *delayModeParameter == prevDelayModeValue) {
         return;
     }
     else {
@@ -192,6 +212,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         prevSyncedDelayValue = *syncedDelayParameter;
         prevBpmSyncValue = *bpmSyncParameter;
         bpm = nextBpmValue;
+        prevDelayModeValue = *delayModeParameter;
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
@@ -207,11 +228,11 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
             int divider = juce::jmax(1, 2 * i);
 
             switch ((int)*delayModeParameter) {
-                case 0:
+                case (int)DelayModes::EXPAND:
                     //Results in divisions 1/1, 1/2, 1/4, 1/6, etc
                     delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
                     break;
-                case 1:
+                case (int)DelayModes::SHRINK:
                     //Results in divisions 1/1, 1/2, 3/4, 5/6, etc
                     //TODO: This section could be a bit smarter
                     insertFirst = false;
@@ -222,7 +243,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
                         delayInSamples = ((int)(*delayParameter * currentSampleRate) / divider);
                     }
                     break;
-                case 2:
+                case (int)DelayModes::EVEN:
                     //Results in even divisions
                     insertFirst = false;
                     delayInSamples = ((int)(*delayParameter * currentSampleRate) / *echoParameter) * (i + 1);

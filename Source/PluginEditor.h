@@ -37,7 +37,7 @@ private:
     void sliderValueChanged(juce::Slider* slider) override;
     void buttonClicked(juce::Button* button) override;
 
-    void updateToggleState(juce::Button* button, juce::String name);
+    void updateToggleState(juce::ToggleButton* button, juce::String name);
 
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
