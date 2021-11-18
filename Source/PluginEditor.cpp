@@ -195,6 +195,7 @@ void DelayyyyyyAudioProcessorEditor::paint (juce::Graphics& g)
 void DelayyyyyyAudioProcessorEditor::resized()
 {
     int headerSize = 40;
+    int headerSeparatorSize = 3;
     int marginSize = 4;
     //Top margin is larger to accomodate the label
     int topMarginSize = 20 + marginSize;
@@ -205,7 +206,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
     Rectangle<int> header = area.removeFromTop(headerFooterHeight);
     pluginTitle.setBounds(header.removeFromLeft(header.getWidth() / 2));
     pluginCredits.setBounds(header);
-    headerSeparator = area.removeFromTop(3);
+    headerSeparator = area.removeFromTop(headerSeparatorSize);
 
     /*FlexBox for the actual content*/
     juce::FlexBox fb;
@@ -267,8 +268,22 @@ void DelayyyyyyAudioProcessorEditor::resized()
     wetBox.items.add(juce::FlexItem(wetAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
     wetBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(50.0f));
     wetBox.items.add(juce::FlexItem(shrinkModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    //withFlex fills the remaining FlexBox space, and the bottomRight aligned text will actually be in the bottomRight of the window
     wetBox.items.add(juce::FlexItem(versionLabel).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart).withFlex(1));
     fb.items.add(juce::FlexItem(wetBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+
+    if (!bpmSync.getToggleState()) {
+        delayModeLabel.setVisible(true);
+        expandModeButton.setVisible(true);
+        evenModeButton.setVisible(true);
+        shrinkModeButton.setVisible(true);
+    }
+    else {
+        delayModeLabel.setVisible(false);
+        expandModeButton.setVisible(false);
+        evenModeButton.setVisible(false);
+        shrinkModeButton.setVisible(false);
+    }
 
     fb.performLayout(area.toFloat());
 }
@@ -282,6 +297,7 @@ void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 
 void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
+    /* Call resized to switch between synced and unsynced controles */
     resized();
     audioProcessor.notifyThread();
 }
