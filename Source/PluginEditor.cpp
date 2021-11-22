@@ -146,6 +146,23 @@ DelayyyyyyAudioProcessorEditor::DelayyyyyyAudioProcessorEditor (DelayyyyyyAudioP
     versionLabel.setJustificationType(juce::Justification::bottomRight);
     versionLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colours::grey);
     addAndMakeVisible(versionLabel);
+
+    /* Delay modes */
+    delayModeLabel.setText("Delay Mode", juce::dontSendNotification);
+    delayModeLabel.setJustificationType(juce::Justification::centredBottom);
+    addAndMakeVisible(delayModeLabel);
+
+    expandModeButton.onClick = [this] { updateToggleState(&expandModeButton, "Expand");   };
+    expandModeButton.setRadioGroupId(DelayModeButtons);
+    addAndMakeVisible(expandModeButton);
+
+    evenModeButton.onClick = [this] { updateToggleState(&evenModeButton, "Even"); };
+    evenModeButton.setRadioGroupId(DelayModeButtons);
+    addAndMakeVisible(evenModeButton);
+
+    shrinkModeButton.onClick = [this] { updateToggleState(&shrinkModeButton, "Shrink"); };
+    shrinkModeButton.setRadioGroupId(DelayModeButtons);
+    addAndMakeVisible(shrinkModeButton);
 }
 
 DelayyyyyyAudioProcessorEditor::~DelayyyyyyAudioProcessorEditor()
@@ -160,11 +177,25 @@ void DelayyyyyyAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setColour(Colours::azure);
     g.fillRect(headerSeparator);
+
+    /* Active delay mode toggle set (required when loading plugin) */
+    switch (audioProcessor.getDelayMode()) {
+        case DelayyyyyyAudioProcessor::DelayModes::EXPAND:
+            expandModeButton.setToggleState(true, juce::sendNotificationSync);
+            break;
+        case DelayyyyyyAudioProcessor::DelayModes::EVEN:
+            evenModeButton.setToggleState(true, juce::sendNotificationSync);
+            break;
+        case DelayyyyyyAudioProcessor::DelayModes::SHRINK:
+            shrinkModeButton.setToggleState(true, juce::sendNotificationSync);
+            break;
+    }
 }
 
 void DelayyyyyyAudioProcessorEditor::resized()
 {
     int headerSize = 40;
+    int headerSeparatorSize = 3;
     int marginSize = 4;
     //Top margin is larger to accomodate the label
     int topMarginSize = 20 + marginSize;
@@ -175,7 +206,7 @@ void DelayyyyyyAudioProcessorEditor::resized()
     Rectangle<int> header = area.removeFromTop(headerFooterHeight);
     pluginTitle.setBounds(header.removeFromLeft(header.getWidth() / 2));
     pluginCredits.setBounds(header);
-    headerSeparator = area.removeFromTop(3);
+    headerSeparator = area.removeFromTop(headerSeparatorSize);
 
     /*FlexBox for the actual content*/
     juce::FlexBox fb;
@@ -207,26 +238,52 @@ void DelayyyyyyAudioProcessorEditor::resized()
     echoBox.items.add(juce::FlexItem(echoAmount).withMinWidth(75.0f).withMinHeight(200.0f));
     //Add an empty item to level the bottom with the delay slider
     echoBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(15.0f));
-
     fb.items.add(juce::FlexItem(echoBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     /*Decay knob*/
-    fb.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                            .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
-                                            .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    juce::FlexBox decayBox;
+    decayBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    decayBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    decayBox.flexDirection = juce::FlexBox::Direction::column;
+    decayBox.items.add(juce::FlexItem(decayAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    decayBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(50.0f));
+    decayBox.items.add(juce::FlexItem(expandModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    fb.items.add(juce::FlexItem(decayBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     /*Ping Pong knob*/
-    fb.items.add(juce::FlexItem(pingPongAmount).withMinWidth(75.0f).withMinHeight(75.0f)
-                                               .withAlignSelf(juce::FlexItem::AlignSelf::flexStart)
-                                               .withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+    juce::FlexBox pingPongBox;
+    pingPongBox.flexWrap = juce::FlexBox::Wrap::wrap;
+    pingPongBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    pingPongBox.flexDirection = juce::FlexBox::Direction::column;
+    pingPongBox.items.add(juce::FlexItem(pingPongAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    pingPongBox.items.add(juce::FlexItem(delayModeLabel).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    pingPongBox.items.add(juce::FlexItem(evenModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    fb.items.add(juce::FlexItem(pingPongBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
 
     /*FlexBox for wet knob and version label*/
     juce::FlexBox wetBox;
     wetBox.flexWrap = juce::FlexBox::Wrap::wrap;
     wetBox.justifyContent = juce::FlexBox::JustifyContent::flexStart;
+    wetBox.flexDirection = juce::FlexBox::Direction::column;
     wetBox.items.add(juce::FlexItem(wetAmount).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
-    wetBox.items.add(juce::FlexItem(versionLabel).withMinWidth(75.0f).withMinHeight(30.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexEnd));
+    wetBox.items.add(juce::FlexItem().withMinWidth(75.0f).withMinHeight(50.0f));
+    wetBox.items.add(juce::FlexItem(shrinkModeButton).withMinWidth(75.0f).withMinHeight(50.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart));
+    //withFlex fills the remaining FlexBox space, and the bottomRight aligned text will actually be in the bottomRight of the window
+    wetBox.items.add(juce::FlexItem(versionLabel).withMinWidth(75.0f).withMinHeight(75.0f).withAlignSelf(juce::FlexItem::AlignSelf::flexStart).withFlex(1));
     fb.items.add(juce::FlexItem(wetBox).withMinWidth(75.0f).withMargin(juce::FlexItem::Margin(topMarginSize, marginSize, marginSize, marginSize)));
+
+    if (!bpmSync.getToggleState()) {
+        delayModeLabel.setVisible(true);
+        expandModeButton.setVisible(true);
+        evenModeButton.setVisible(true);
+        shrinkModeButton.setVisible(true);
+    }
+    else {
+        delayModeLabel.setVisible(false);
+        expandModeButton.setVisible(false);
+        evenModeButton.setVisible(false);
+        shrinkModeButton.setVisible(false);
+    }
 
     fb.performLayout(area.toFloat());
 }
@@ -240,6 +297,25 @@ void DelayyyyyyAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 
 void DelayyyyyyAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
+    /* Call resized to switch between synced and unsynced controles */
     resized();
     audioProcessor.notifyThread();
+}
+
+void DelayyyyyyAudioProcessorEditor::updateToggleState(juce::ToggleButton* button, juce::String name)
+{
+    bool state = button->getToggleState();
+
+    if (state) {
+        if (button == &expandModeButton) {
+            audioProcessor.setDelayMode(DelayyyyyyAudioProcessor::DelayModes::EXPAND);
+        }
+        else if (button == &evenModeButton) {
+            audioProcessor.setDelayMode(DelayyyyyyAudioProcessor::DelayModes::EVEN);
+        }
+        else if (button == &shrinkModeButton) {
+            audioProcessor.setDelayMode(DelayyyyyyAudioProcessor::DelayModes::SHRINK);
+        }
+        audioProcessor.notifyThread();
+    }
 }

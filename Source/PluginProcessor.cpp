@@ -55,6 +55,11 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
             std::make_unique<juce::AudioParameterBool>("BPMSYNC",
                                                        "BPM Sync",
                                                        false),
+            std::make_unique<juce::AudioParameterInt>("DELAYMODE",
+                                                      "Delay Mode",
+                                                      0,
+                                                      2,
+                                                      0),
         }),
     Thread("DelayBufferParamsThread")
 {
@@ -65,6 +70,7 @@ DelayyyyyyAudioProcessor::DelayyyyyyAudioProcessor()
     pingPongParameter = parameters.getRawParameterValue("PINGPONG");
     wetParameter = parameters.getRawParameterValue("WET");
     bpmSyncParameter = parameters.getRawParameterValue("BPMSYNC");
+    delayModeParameter = parameters.getRawParameterValue("DELAYMODE");
 }
 
 DelayyyyyyAudioProcessor::~DelayyyyyyAudioProcessor()
@@ -172,12 +178,32 @@ float DelayyyyyyAudioProcessor::getSyncedDelay(int index) {
     }
 }
 
+void DelayyyyyyAudioProcessor::setDelayMode(DelayyyyyyAudioProcessor::DelayModes mode) {
+    juce::RangedAudioParameter *delayModeRangedParameter = parameters.getParameter("DELAYMODE");
+    float scaledValue = delayModeRangedParameter->convertTo0to1((int)mode);
+    delayModeRangedParameter->beginChangeGesture();
+    delayModeRangedParameter->setValueNotifyingHost(scaledValue);
+    delayModeRangedParameter->endChangeGesture();
+}
+
+DelayyyyyyAudioProcessor::DelayModes DelayyyyyyAudioProcessor::getDelayMode() {
+    switch ((int)*delayModeParameter) {
+        case (int)DelayModes::EXPAND:
+            return DelayModes::EXPAND;
+        case (int)DelayModes::EVEN:
+            return DelayModes::EVEN;
+        case (int)DelayModes::SHRINK:
+            return DelayModes::SHRINK;
+    }
+}
+
 void DelayyyyyyAudioProcessor::setDelayBufferParams() {
     if (*delayParameter == prevDelayValue &&
         *echoParameter == prevEchoValue &&
         *syncedDelayParameter == prevSyncedDelayValue &&
         *bpmSyncParameter == prevBpmSyncValue &&
-        bpm == nextBpmValue) {
+        bpm == nextBpmValue &&
+        *delayModeParameter == prevDelayModeValue) {
         return;
     }
     else {
@@ -186,6 +212,7 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         prevSyncedDelayValue = *syncedDelayParameter;
         prevBpmSyncValue = *bpmSyncParameter;
         bpm = nextBpmValue;
+        prevDelayModeValue = *delayModeParameter;
     }
 
     std::vector<DelayBuffer> newDelayBuffers;
@@ -194,10 +221,34 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
 
     for (int i = (int)*echoParameter - 1; i >= 0; i = i - 1) {
         int delayInSamples = 0;
+        //Helper variable to ensure that the delays are in the correct order, no matter what the delayMode is
+        bool insertFirst = true;
 
         if (!*bpmSyncParameter) {
             int divider = juce::jmax(1, 2 * i);
-            delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
+
+            switch ((int)*delayModeParameter) {
+                case (int)DelayModes::EXPAND:
+                    //Results in divisions 1/1, 1/2, 1/4, 1/6, etc
+                    delayInSamples = (int)(*delayParameter * currentSampleRate) / divider;
+                    break;
+                case (int)DelayModes::SHRINK:
+                    //Results in divisions 1/1, 1/2, 3/4, 5/6, etc
+                    //TODO: This section could be a bit smarter
+                    insertFirst = false;
+                    delayInSamples = ((int)(*delayParameter * currentSampleRate) / divider);
+                    delayInSamples = (int)(*delayParameter * currentSampleRate) - delayInSamples;
+                    if (delayInSamples == 0) {
+                        insertFirst = true;
+                        delayInSamples = ((int)(*delayParameter * currentSampleRate) / divider);
+                    }
+                    break;
+                case (int)DelayModes::EVEN:
+                    //Results in even divisions
+                    insertFirst = false;
+                    delayInSamples = ((int)(*delayParameter * currentSampleRate) / *echoParameter) * (i + 1);
+                    break;
+            }
         }
         else {
             //Magic number 60 comes from the amount of seconds in a minute
@@ -218,7 +269,12 @@ void DelayyyyyyAudioProcessor::setDelayBufferParams() {
         newDelayBuffer.setDelayLineParameters(getTotalNumInputChannels(), delayInSamples + 1);
         newDelayBuffer.setDelayWritePosition(delayInSamples);
 
-        newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
+        if (insertFirst) {
+            newDelayBuffers.insert(newDelayBuffers.begin(), newDelayBuffer);
+        }
+        else {
+            newDelayBuffers.insert(newDelayBuffers.end(), newDelayBuffer);
+        }
     }
     delayBuffers = newDelayBuffers;
     delayBufferWait.signal();
